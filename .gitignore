@@ -147,3 +147,9 @@ vite.config.ts.timestamp-*
 
 # Turbo Repo
 .turbo
+
+# Expo generated files
+.expo/
+expo-env.d.ts
+/android/
+/ios/
