@@ -1,6 +1,7 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { theme } from '../theme';
+import { NetworkProvider } from '../features/network/NetworkProvider';
 
 // The root stack places detail/account screens above the main tab navigator.
 // Pushing a screen adds native back navigation to the previous screen.
@@ -9,7 +10,7 @@ import { theme } from '../theme';
 // need to implment: module owners, register new review/confirmation/detail
 // screens here as your task flows grow; coordinate shared navigation edits.
 export default function RootLayout() {
-  return <>
+  return <NetworkProvider>
     <StatusBar style="dark" />
     <Stack screenOptions={{
       headerStyle: { backgroundColor: theme.colors.background },
@@ -26,5 +27,5 @@ export default function RootLayout() {
       <Stack.Screen name="login" options={{ title: 'Log in' }} />
       <Stack.Screen name="signup" options={{ title: 'Sign up' }} />
     </Stack>
-  </>;
+  </NetworkProvider>;
 }

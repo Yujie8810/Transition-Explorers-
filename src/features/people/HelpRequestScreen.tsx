@@ -6,8 +6,11 @@ import { Screen } from '../../components/Screen';
 import { AppButton } from '../../components/AppButton';
 import { sampleGuides } from '../../data/sampleData';
 import { theme } from '../../theme';
+import { useNetwork } from '../network/NetworkProvider';
 
 export default function HelpRequestScreen() {
+  const network = useNetwork();
+  const [saving, setSaving] = useState(false);
   const { id } = useLocalSearchParams<{ id?: string | string[] }>();
   const graduateId = Array.isArray(id) ? id[0] : id;
 
@@ -18,14 +21,21 @@ export default function HelpRequestScreen() {
   const [error, setError] = useState('');
   const [sent, setSent] = useState(false);
 
-  const handleSend = () => {
+  const handleSend = async () => {
+    if (!graduate || saving) return;
     if (!message.trim()) {
       setError('Please enter a message before sending.');
       return;
     }
 
     setError('');
-    setSent(true);
+    setSaving(true);
+    try {
+      await network.saveRequest({ guideId: graduate.id, message, kind });
+      setSent(true);
+    } catch {
+      setError('Your request could not be saved. Please try again.');
+    } finally { setSaving(false); }
   };
 
   if (!graduate) {
@@ -46,9 +56,9 @@ export default function HelpRequestScreen() {
     return (
       <Screen title="Request guidance">
         <View style={styles.card}>
-          <Text style={styles.successTitle}>Request sent!</Text>
+          <Text style={styles.successTitle}>Request saved!</Text>
           <Text style={styles.bodyText}>
-            Your guidance request to {graduate.name} has been submitted.
+            Your guidance request for {graduate.name} is saved on this device and appears in Your Circle. Messaging graduates is not connected yet.
           </Text>
 
           <Text style={styles.sectionTitle}>Request type</Text>
@@ -60,6 +70,7 @@ export default function HelpRequestScreen() {
           <Text style={styles.bodyText}>{message.trim()}</Text>
         </View>
 
+        <AppButton label="View Your Circle" onPress={() => router.replace('/network')} />
         <AppButton
           label="Back to Profile"
           onPress={() =>
@@ -76,7 +87,7 @@ export default function HelpRequestScreen() {
   return (
     <Screen
       title="Request guidance"
-      subtitle={`Send a guidance request to ${graduate.name}.`}
+      subtitle={`Save a guidance request for ${graduate.name}.`}
     >
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>Requesting help from</Text>
@@ -129,8 +140,9 @@ export default function HelpRequestScreen() {
         You can review and edit your message before sending.
       </Text>
 
-      <AppButton label="Send Request" onPress={handleSend} />
-      <AppButton label="Cancel" onPress={() => router.back()} />
+      {network.loadError ? <><Text style={styles.errorText}>{network.loadError}</Text><AppButton label="Retry loading" onPress={network.reload} /></> : null}
+      <AppButton label={saving ? 'Saving…' : 'Save Request'} disabled={saving || !network.ready} onPress={() => void handleSend()} />
+      <AppButton label="Cancel" disabled={saving} onPress={() => router.back()} />
     </Screen>
   );
 }

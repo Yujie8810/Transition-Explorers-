@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
@@ -5,8 +6,12 @@ import { Screen } from '../../components/Screen';
 import { AppButton } from '../../components/AppButton';
 import { sampleGuides } from '../../data/sampleData';
 import { theme } from '../../theme';
+import { useNetwork } from '../network/NetworkProvider';
 
 export default function GuideProfileScreen() {
+  const network = useNetwork();
+  const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
   const { id } = useLocalSearchParams<{ id?: string | string[] }>();
   const graduateId = Array.isArray(id) ? id[0] : id;
   const graduate = sampleGuides.find((guide) => guide.id === graduateId);
@@ -36,6 +41,17 @@ export default function GuideProfileScreen() {
         </Text>
       </View>
 
+      {error ? <Text style={styles.emptyMessage}>{error}</Text> : null}
+      {network.loadError ? <><Text style={styles.emptyMessage}>{network.loadError}</Text><AppButton label="Retry loading" onPress={network.reload} /></> : null}
+      <AppButton
+        label={network.contactIds.includes(graduate.id) ? 'View in Your Circle' : saving ? 'Saving…' : 'Add to Your Circle'}
+        disabled={!network.ready || saving}
+        onPress={() => {
+          if (network.contactIds.includes(graduate.id)) { router.push('/network'); return; }
+          setSaving(true); setError('');
+          network.addContact(graduate.id).catch(() => setError('Could not save this contact. Please try again.')).finally(() => setSaving(false));
+        }}
+      />
       <AppButton
         label="Ask for Guidance"
         onPress={() =>
