@@ -88,9 +88,9 @@ The project uses Expo libraries and tooling in every option below. **Running wit
 4. Scan the terminal QR code using Expo Go on Android or the Camera app on iPhone.
 5. Leave the terminal running. Save a screen change to see it refresh on the phone.
 
-On a physical iPhone, current Expo guidance requires Expo CLI and Expo Go to use the same Expo account. Run `npx expo login` on your computer and sign in to that account in Expo Go. Follow [Expo’s device instructions](https://docs.expo.dev/get-started/start-developing/) for account or connection errors.
+If Expo Go asks you to sign in, run `npx expo login` on your computer and sign in to that account in Expo Go. Follow [Expo’s device instructions](https://docs.expo.dev/get-started/start-developing/) for account or connection errors.
 
-This starter uses **Expo SDK 57**. Coordinate SDK upgrades with the team if Expo Go reports a mismatch; do not independently upgrade React Native or Expo packages.
+This project uses **Expo SDK 58**. Use Expo Go with SDK 58 support on Android and iOS. After pulling this upgrade, stop any existing Expo server and run `npm ci`, then `npx expo start --go --clear`. If the phone cannot reach the computer over Wi-Fi, use `npx expo start --go --tunnel ngrok --clear` and scan the new QR code. Coordinate future SDK upgrades with the team; do not independently upgrade React Native or Expo packages.
 
 ### Option B: Browser preview without Expo Go
 
@@ -154,7 +154,7 @@ This uploads the project to EAS and produces an installable APK. Share the downl
 | --- | --- |
 | `package.json` not found | Open the repository folder before running npm commands. |
 | Missing packages after cloning/pulling | Stop the server and run `npm ci`. |
-| Phone cannot reach the server | Check Wi-Fi/firewall settings or use a personal hotspot. Try `npx expo start --tunnel`; it may request a tunnel helper installation. |
+| Phone cannot reach the server | Check Wi-Fi/firewall settings or use a personal hotspot. Try `npx expo start --tunnel ngrok`; it may request a tunnel helper installation. |
 | Old code or Metro cache issues | Stop the server and run `npx expo start --clear`. |
 | Expo Go SDK mismatch | Compare the installed app version with this repository’s SDK and coordinate the fix with the team. |
 | Emulator/simulator not found | Set up Android Studio or Xcode, or use the phone/browser options instead. |
@@ -289,4 +289,4 @@ The final Source, ReadMe, and Team PDFs, final presentation, and narrated/subtit
 
 ## Verification at setup
 
-TypeScript checking and Metro exports for Android, iOS, and web passed. Physical-device testing still needs to be done by the team. npm audit reports 11 dependency advisories, including high-severity findings propagated from Zod through Expo CLI. Its suggested forced fix downgrades Expo across SDK versions, so it was not applied. Review compatible upstream fixes when updating the SDK.
+After the SDK 58 upgrade, TypeScript checking, all 20 Expo Doctor checks, and Metro exports for Android, iOS, and web passed. Physical-device testing still needs to be done by the team. npm install reports 8 dependency advisories (5 low and 3 high). These remain unresolved; review compatible fixes separately before applying dependency changes.
