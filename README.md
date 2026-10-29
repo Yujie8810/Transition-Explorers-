@@ -174,7 +174,7 @@ Run that command to check TypeScript before sharing changes. It does not replace
 | --- | --- | --- |
 | Aproteem | `src/features/auth/`, `src/features/explore/` | Login/signup/logout, home layout; coordinate shared navigation changes |
 | Mourede | `src/features/advice/`, `src/features/ask/` | Search, discussions/answers, question posting, saving advice |
-| Unassigned | `src/features/people/` | People search/filtering, graduate profiles, editable guidance requests |
+| Yujie Duan | `src/features/people/` | People search/filtering, graduate profiles, editable guidance requests |
 | Hoa | `src/features/network/` | Connections, mentor details, check-in scheduling and progress |
 | Aalvee | `src/features/profile/`, `src/components/`, `src/theme.ts` | User profile, shared components, testing support |
 | Agree together | `src/features/saved/` | Saved advice shared by the advice and network flows |
