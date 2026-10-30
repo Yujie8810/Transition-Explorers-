@@ -3,12 +3,12 @@ import { theme } from '../theme';
 
 // Shared touch target: label is visible text; onPress is supplied by the screen.
 // Press feedback lowers opacity. Feature logic belongs in the caller.
-type Props = { label: string; onPress: () => void; disabled?: boolean };
-export function AppButton({ label, onPress, disabled = false }: Props) {
+type Props = { label: string; onPress: () => void; disabled?: boolean; accessibilityLabel?: string; variant?: 'primary' | 'danger' };
+export function AppButton({ label, onPress, disabled = false, accessibilityLabel, variant = 'primary' }: Props) {
   return (
-    <Pressable accessibilityRole="button" onPress={onPress} disabled={disabled}
+    <Pressable accessibilityRole="button" accessibilityLabel={accessibilityLabel ?? label} onPress={onPress} disabled={disabled}
       accessibilityState={{ disabled }}
-      style={({ pressed }) => [styles.button, (pressed || disabled) && { opacity: 0.5 }]}>
+      style={({ pressed }) => [styles.button, variant === 'danger' && { backgroundColor: theme.colors.danger }, (pressed || disabled) && { opacity: 0.5 }]}>
       <Text style={styles.label}>{label}</Text>
     </Pressable>
   );

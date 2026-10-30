@@ -39,7 +39,7 @@ export function SectionLabel({ children }: { children: string }) {
   return <Text accessibilityRole="header" style={styles.sectionLabel}>{children.toUpperCase()}</Text>;
 }
 
-type ButtonProps = { label: string; onPress: () => void; variant?: 'primary' | 'secondary' | 'onDark' | 'onDarkQuiet';
+type ButtonProps = { label: string; onPress: () => void; variant?: 'primary' | 'secondary' | 'onDark' | 'onDarkQuiet' | 'danger';
   disabled?: boolean; accessibilityLabel?: string; accessibilityHint?: string };
 
 /** Full-width button. primary = dark green, secondary = outlined, onDark* = for the dark confirmation screen. */
@@ -76,18 +76,18 @@ export function Chip({ label, selected, onPress }: { label: string; selected: bo
 }
 
 type ConfirmProps = { visible: boolean; title: string; message: string; confirmLabel: string; cancelLabel: string;
-  onConfirm: () => void; onCancel: () => void };
+  onConfirm: () => void; onCancel: () => void; disabled?: boolean; destructive?: boolean };
 
 /** A yes/no dialog. Built with Modal because Alert.alert does nothing on web. The safe choice is the main button. */
-export function ConfirmDialog({ visible, title, message, confirmLabel, cancelLabel, onConfirm, onCancel }: ConfirmProps) {
+export function ConfirmDialog({ visible, title, message, confirmLabel, cancelLabel, onConfirm, onCancel, disabled = false, destructive = false }: ConfirmProps) {
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={() => { if (!disabled) onCancel(); }}>
       <View style={styles.backdrop}>
         <View style={styles.dialog} accessibilityRole="alert" aria-modal accessibilityViewIsModal>
           <Text accessibilityRole="header" style={styles.dialogTitle}>{title}</Text>
           <Text style={styles.dialogText}>{message}</Text>
-          <ActionButton label={cancelLabel} onPress={onCancel} />
-          <ActionButton variant="secondary" label={confirmLabel} onPress={onConfirm} />
+          <ActionButton label={cancelLabel} onPress={onCancel} disabled={disabled} />
+          <ActionButton variant={destructive ? 'danger' : 'secondary'} label={confirmLabel} onPress={onConfirm} disabled={disabled} />
         </View>
       </View>
     </Modal>
@@ -143,12 +143,14 @@ const styles = StyleSheet.create({
 
 const buttonStyles = StyleSheet.create({
   primary: { backgroundColor: colors.green },
+  danger: { backgroundColor: colors.danger },
   secondary: { backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.green },
   onDark: { backgroundColor: colors.lime },
   onDarkQuiet: { borderWidth: 1.5, borderColor: colors.lime },
 });
 const buttonText = StyleSheet.create({
   primary: { color: colors.surface },
+  danger: { color: colors.surface },
   secondary: { color: colors.green },
   onDark: { color: colors.green },
   onDarkQuiet: { color: colors.surface },

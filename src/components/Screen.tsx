@@ -9,7 +9,7 @@ type Props = { title: string; subtitle?: string; children: ReactNode };
 export function Screen({ title, subtitle, children }: Props) {
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}
-      keyboardShouldPersistTaps="handled">
+      keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
       <Text accessibilityRole="header" style={styles.title}>{title}</Text>
       {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
       <View style={styles.body}>{children}</View>

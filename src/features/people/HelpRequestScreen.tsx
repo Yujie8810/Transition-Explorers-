@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
 import { Screen } from '../../components/Screen';
@@ -20,6 +20,12 @@ export default function HelpRequestScreen() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [sent, setSent] = useState(false);
+  // Review preserves the editable draft; only confirmation writes to the network store.
+  const [reviewing, setReviewing] = useState(false);
+  const review = () => {
+    if (!message.trim()) { setError('Please enter a message before reviewing.'); return; }
+    setError(''); setReviewing(true);
+  };
 
   const handleSend = async () => {
     if (!graduate || saving) return;
@@ -84,6 +90,23 @@ export default function HelpRequestScreen() {
     );
   }
 
+  if (reviewing) return <Screen title="Review your request" subtitle="Check the recipient and message before saving.">
+    <View style={styles.card}>
+      <Text style={styles.sectionTitle}>Requesting help from</Text>
+      <Text style={styles.name}>{graduate.name}</Text>
+      <Text style={styles.bodyText}>{graduate.role}</Text>
+      <Text style={styles.sectionTitle}>Request type</Text>
+      <Text style={styles.bodyText}>{kind === 'advice' ? 'Advice' : 'Check-in'}</Text>
+      <Text style={styles.sectionTitle}>Your message</Text>
+      <Text style={styles.bodyText}>{message.trim()}</Text>
+    </View>
+    <Text style={styles.helperText}>This demo saves the request on your device; it does not message the graduate.</Text>
+    {error ? <Text style={styles.errorText} accessibilityRole="alert">{error}</Text> : null}
+    {network.loadError ? <><Text style={styles.errorText}>{network.loadError}</Text><AppButton label="Retry loading" onPress={network.reload} /></> : null}
+    <AppButton label={saving ? 'Saving…' : 'Confirm and save request'} disabled={saving || !network.ready} onPress={() => void handleSend()} />
+    <AppButton label="Edit request" disabled={saving} onPress={() => { setReviewing(false); setError(''); }} />
+  </Screen>;
+
   return (
     <Screen
       title="Request guidance"
@@ -97,26 +120,14 @@ export default function HelpRequestScreen() {
 
       <Text style={styles.sectionTitle}>What kind of help do you need?</Text>
 
-      <View style={styles.optionContainer}>
-        <Text
-          onPress={() => setKind('advice')}
-          style={[
-            styles.option,
-            kind === 'advice' && styles.selectedOption,
-          ]}
-        >
-          Advice
-        </Text>
-
-        <Text
-          onPress={() => setKind('check-in')}
-          style={[
-            styles.option,
-            kind === 'check-in' && styles.selectedOption,
-          ]}
-        >
-          Check-in
-        </Text>
+      <View style={styles.optionContainer} accessibilityRole="radiogroup">
+        {(['advice', 'check-in'] as const).map(value => <Pressable key={value}
+          accessibilityRole="radio" accessibilityState={{ checked: kind === value }}
+          onPress={() => setKind(value)} style={[styles.option, kind === value && styles.selectedOption]}>
+          <Text style={{ color: kind === value ? theme.colors.surface : theme.colors.ink }}>
+            {value === 'advice' ? 'Advice' : 'Check-in'}
+          </Text>
+        </Pressable>)}
       </View>
 
       <Text style={styles.sectionTitle}>Your message</Text>
@@ -137,11 +148,11 @@ export default function HelpRequestScreen() {
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
       <Text style={styles.helperText}>
-        You can review and edit your message before sending.
+        Review your request next. You can return to edit before confirming.
       </Text>
 
       {network.loadError ? <><Text style={styles.errorText}>{network.loadError}</Text><AppButton label="Retry loading" onPress={network.reload} /></> : null}
-      <AppButton label={saving ? 'Saving…' : 'Save Request'} disabled={saving || !network.ready} onPress={() => void handleSend()} />
+      <AppButton label="Review request" disabled={!network.ready} onPress={review} />
       <AppButton label="Cancel" disabled={saving} onPress={() => router.back()} />
     </Screen>
   );
@@ -177,6 +188,8 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   option: {
+    minHeight: 48,
+    justifyContent: 'center',
     paddingVertical: 10,
     paddingHorizontal: 18,
     borderRadius: 20,

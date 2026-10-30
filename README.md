@@ -4,15 +4,19 @@ CS 4352 DP4 mobile app for UTD students and recent graduates seeking workplace a
 
 Team: Aalvee Ahtav, Aproteem Majumder, Hoa Doan, Mourede Otchere, Yujie Duan.
 
-## What this starter contains
+## Current implementation
 
-- Expo + React Native + TypeScript, with Expo Router navigation.
-- Explore, Ask, People, and Saved tabs; a Profile entry in the header.
-- Placeholder routes for advice, graduate profiles, requests, Your Circle, check-ins, login, and signup.
-- Shared screen/button components and a color palette based on our Figma prototype.
-- Shared data types and a small fictional seed dataset.
+- **Explore:** connected discussion feed, keyword search, topic filters, and question details. The active bottom tab has a centered icon/label inside a rounded lime highlight.
+- **Advice and Saved:** individual answer saving, author attribution, saved-state feedback, removal, and undo.
+- **Ask:** editable questions, similar experiences, review/edit/publish, and linked follow-ups.
+- **People:** graduate search/filtering, profiles, and guidance requests with review/edit/confirm.
+- **Your Circle:** contacts, saved requests, check-in scheduling, review, rescheduling, cancellation, and history.
+- **Profile:** a fictional local user, editable identity, links to Saved/Your Circle, and **View your posted questions** to view/edit/delete local posts. Edits persist and update Explore; deletion requires confirmation and leaves any follow-ups as independent posts. Seeded community questions cannot be edited or deleted.
+- **Storage:** AsyncStorage keeps profile, questions, saved tips, contacts, requests, and check-ins on the device/browser.
 
-**This is a skeleton. No task is fully implemented yet.** Search, filtering, saving, posting, account management, help requests, scheduling, and persistence are team implementation work. Preview buttons only navigate. The app starts on Explore so everyone can work before authentication is implemented. This bypass is not a login system.
+**Login/signup/logout and verification remain unfinished.** The app opens Explore directly and uses a fictional demo profile (Alex Morgan), not an authenticated account. Requests are simulated locally; they do not send messages. Check-ins are personal plans, not confirmed mentor availability. There is no backend or cross-device synchronization. Data is not yet isolated by account.
+
+The shared dataset contains **7 graduates, 13 questions, and 30 answers**. Posted questions are local additions, initially without answers.
 
 ## First-time setup for each teammate
 
@@ -176,10 +180,10 @@ Run that command to check TypeScript before sharing changes. It does not replace
 | Mourede | `src/features/advice/`, `src/features/ask/` | Search, discussions/answers, question posting, saving advice |
 | Yujie Duan | `src/features/people/` | People search/filtering, graduate profiles, editable guidance requests |
 | Hoa | `src/features/network/` | Connections, mentor details, check-in scheduling and progress |
-| Aalvee | `src/features/profile/`, `src/components/`, `src/theme.ts` | User profile, shared components, testing support |
+| Aalvee | `src/features/profile/`, `src/components/`, `src/theme.ts` | User profile, posted-question management, shared components, testing support |
 | Agree together | `src/features/saved/` | Saved advice shared by the advice and network flows |
 
-The Ask for Help owner is intentionally unassigned because the planning document left it blank. Assign it before work begins.
+Yujie owns Ask for Help. Mourede and Hoa should coordinate edits to the shared Saved flow. Existing feature implementations should be extended in their owners’ modules.
 
 ### Folder map
 
@@ -190,9 +194,11 @@ src/
     advice/[id].tsx    Selected discussion route
     people/            Graduate profile and request routes
     network/           Circle and check-in routes
+    my-questions/      Posted-question list and edit routes
   features/            Actual screens, grouped by module
   components/          Shared Screen, AppButton, FeaturePlaceholder
-  data/sampleData.ts   Fictional example records; currently not wired into screens
+  data/sampleData.ts   Fictional graduates, questions, and answers used by the screens
+  state/               Shared profile and saved-advice providers
   types/index.ts       Shared TypeScript contracts
   theme.ts             Shared colors and spacing
 ```
@@ -201,13 +207,13 @@ Search for `need to implment` in `src/` to find comments describing unfinished w
 
 Routes re-export feature screens to keep team edits separate. Implement the UI inside your feature folder, replacing `FeaturePlaceholder` as you go. Add more routes/screens for review, confirmation, mentor details, or progress when your flow needs them.
 
-Use `useLocalSearchParams` from `expo-router` to read an `[id]` route parameter and look up the selected record. The starter's preview routes use `first-week` and `taylor`, matching IDs in `sampleData.ts`. They do not yet render the records.
+Use `useLocalSearchParams` from `expo-router` to read an `[id]` route parameter and look up the selected record. Advice and graduate profiles already use this pattern with IDs from `sampleData.ts`.
 
 ## Shared development rules
 
 - Reuse `Screen`, `AppButton`, and `theme`; coordinate edits to these shared files.
 - Keep route files small. Put feature-specific components and logic inside the feature folder.
-- Agree on a shared state/persistence approach before wiring saved advice, requests, sessions, or connections. The starter deliberately does not choose a backend or implement storage.
+- Reuse `AdviceProvider`, `SavedAdviceProvider`, `NetworkProvider`, and `ProfileProvider` for their respective shared data. Each already uses AsyncStorage. `AdviceProvider` exposes `postedQuestions`, `postQuestion`, `updateQuestion`, and `deleteQuestion`; use these shared operations so Explore and Profile stay in sync. Question mutations wait for loading and serialize storage writes. Coordinate account/session integration with Aproteem before adding authentication or changing storage keys.
 - Import seed data rather than duplicating the same people/posts in multiple modules. Expand the data enough to support realistic tasks.
 - Stack screens receive a back button when pushed from another screen. Test returning without losing drafts.
 - Keep account simulation explicit; do not store real passwords in seed data.
@@ -265,18 +271,19 @@ After your pull request is merged, switch to `main`, pull the latest code, and c
 
 ## November 3 checkpoint
 
-The checkpoint needs 2–3 slides and a live demo within 5 minutes. **At least one of the three tasks must work end to end. This starter alone does not meet that requirement.**
+The checkpoint needs 2–3 slides and a live demo within **5 minutes**. At least one of the three tasks must work end to end on the chosen mobile platform.
 
-Suggested next steps for the team:
+- Presentation: [DP4-Checkpoint.pptx](docs/DP4-Checkpoint.pptx).
+- Rehearsal, phone checks, and proposed timeline: [checkpoint guide](docs/checkpoint.md).
+- Main demo: **Explore → filter/search → open a question → save one answer → Saved → reopen the question**.
+- Before class: test on the presentation phone, verify persistence after restarting, and confirm the live connection. Browser testing and successful bundling do not establish physical-device readiness.
+- State limitations honestly: fictional data, local storage, simulated requests/check-ins, and unfinished authentication.
 
-1. Confirm ownership for Ask for Help and Saved, and choose the checkpoint task.
-2. A practical first task is Explore → select a topic/post → read advice → save a specific answer → reopen it in Saved.
-3. Agree on the sample data and how saving state will be shared between Explore and Saved.
-4. Implement that complete flow and resolve its DP3 issues: back navigation, clear save selection, visible saved state, and consistent author names/initials.
-5. Show honest progress on other modules and document remaining work through November 15.
-6. Prepare slides with title, platform/tools, three tasks, implementation status/timeline, hardcoded data, and GitHub URL.
+### Profile/authentication handoff
 
-Do not add extra features just to fill the skeleton. Prioritize the agreed task flows and DP3 feedback.
+`src/state/ProfileContext.tsx` exports `UserProfile`, `ProfileProvider`, and `useProfile()`. The default is fictional Alex Morgan; edits persist under `transition-explorers.profile.v1`. `updateProfile` validates and saves name, program, and Student/Graduate affiliation. Profile does not store passwords or claim verified UTD membership.
+
+**need to implment:** Aproteem + Aalvee, connect this shared profile to the eventual simulated session, add login/signup/logout behavior, and decide how to separate/reset user data between accounts. Keep this coordinated with the other providers because their records are currently device-wide.
 
 ## References
 
@@ -287,6 +294,8 @@ Do not add extra features just to fill the skeleton. Prioritize the agreed task 
 
 The final Source, ReadMe, and Team PDFs, final presentation, and narrated/subtitled video still need to be prepared by the assigned team members. This repository README is a development guide, not a replacement for those submissions.
 
-## Verification at setup
+## Verification
 
 After the SDK 58 upgrade, TypeScript checking, all 20 Expo Doctor checks, and Metro exports for Android, iOS, and web passed. Physical-device testing still needs to be done by the team. npm install reports 8 dependency advisories (5 low and 3 high). These remain unresolved; review compatible fixes separately before applying dependency changes.
+
+Latest integration checks (October 29): TypeScript and Android/iOS/web Metro exports passed. Mobile-sized Chromium checks passed for the complete advice flow, profile validation/edit/cancel/persistence, request review/edit/confirmation, and request-to-Circle-to-check-in integration, with no observed browser runtime errors. Posted-question checks also passed for publication, edit validation, text/topic/visibility changes, persistence, cancel/discard, Explore synchronization, seed protection, and delete confirmation/persistence. The tab alignment was visually checked in a phone-sized browser preview; the red delete styling passed TypeScript checks. See `docs/checkpoint.md` for detailed checks and the physical-phone checklist still to complete.

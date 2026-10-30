@@ -4,7 +4,7 @@ import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } fr
 import { theme } from '../../theme';
 import { Topic } from '../../types';
 import { AdviceCard } from '../advice/AdviceCard';
-import { PostedQuestion, useAdvice, Visibility } from '../advice/AdviceProvider';
+import { PostedQuestion, useAdvice, Visibility, questionRules } from '../advice/AdviceProvider';
 import { findSimilar } from '../advice/search';
 import { ActionButton, AdviceScreen, announce, Chip, ConfirmDialog, SectionLabel, TextLink } from '../advice/ui';
 
@@ -23,9 +23,9 @@ const VISIBILITY: { value: Visibility; label: string; hint: string }[] = [
   { value: 'Public', label: 'Everyone, with my name', hint: 'Graduates and students see who asked.' },
   { value: 'Anonymous', label: 'Everyone, anonymously', hint: 'Others see “Anonymous” instead of your name.' },
 ];
-const TITLE_MIN = 10;
-const TITLE_MAX = 150;
-const BODY_MAX = 1000;
+const TITLE_MIN = questionRules.titleMin;
+const TITLE_MAX = questionRules.titleMax;
+const BODY_MAX = questionRules.bodyMax;
 
 export default function AskScreen() {
   const { posts, findPost, postQuestion } = useAdvice();
