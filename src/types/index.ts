@@ -4,6 +4,7 @@
 // IDs link records across modules; startsAt should use an ISO date/time string.
 export type Topic = 'First job' | 'Interviews' | 'Work life';
 export type Advice = { id: string; title: string; topic: Topic; body: string; authorId: string };
-export type Guide = { id: string; name: string; role: string; expertise: string[] };
+export type Answer = { id: string; adviceId: string; guideId: string; body: string };
+export type Guide = { id: string; name: string; role: string; expertise: string[]; gradYear?: number; yearsExperience?: number };
 export type HelpRequest = { id: string; guideId: string; message: string; kind: 'advice' | 'check-in' };
 export type CheckIn = { id: string; guideId: string; topic: string; startsAt: string; durationMinutes: 15 | 30 };
