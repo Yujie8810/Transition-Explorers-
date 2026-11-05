@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ComponentRef, useEffect, useRef, useState } from 'react';
+import { Keyboard, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { theme } from '../../theme';
 import { Topic } from '../../types';
 import { AdviceCard } from '../advice/AdviceCard';
@@ -37,6 +37,7 @@ export default function AskScreen() {
   const [visibility, setVisibility] = useState<Visibility>('Public');
   const [followUpOf, setFollowUpOf] = useState<string | undefined>(undefined);
   const [showErrors, setShowErrors] = useState(false);
+  const titleInput = useRef<ComponentRef<typeof TextInput>>(null);
   const [posting, setPosting] = useState(false);
   const [postError, setPostError] = useState('');
   const [posted, setPosted] = useState<PostedQuestion | null>(null);
@@ -73,7 +74,7 @@ export default function AskScreen() {
   const pendingParent = pendingFollowUp ? findPost(pendingFollowUp) : undefined;
 
   const errors = {
-    title: title.trim().length < TITLE_MIN ? `Write at least ${TITLE_MIN} characters so others understand your question.` : '',
+    title: title.trim().length < TITLE_MIN ? `Write at least ${TITLE_MIN} characters in the question title. Optional details do not count.` : '',
     topic: topic ? '' : 'Choose the topic that fits best.',
   };
   const valid = !errors.title && !errors.topic;
@@ -90,7 +91,13 @@ export default function AskScreen() {
 
   const review = () => {
     setShowErrors(true);
-    if (valid) setStep('review');
+    if (!valid) {
+      announce([errors.topic, errors.title].filter(Boolean).join(' '));
+      if (errors.title) titleInput.current?.focus();
+      return;
+    }
+    Keyboard.dismiss();
+    setStep('review');
   };
 
   const publish = async () => {
@@ -173,16 +180,18 @@ export default function AskScreen() {
     <View style={styles.group}>
       <SectionLabel>Your question</SectionLabel>
       <View style={styles.box}>
-        <TextInput style={styles.titleInput} value={title} onChangeText={setTitle} maxLength={TITLE_MAX} multiline
+        <Text style={styles.inputLabel}>Question title · at least {TITLE_MIN} characters</Text>
+        <TextInput ref={titleInput} style={styles.titleInput} value={title} onChangeText={setTitle} maxLength={TITLE_MAX} multiline
           placeholder="e.g. How do I prepare for my first performance review?"
           placeholderTextColor={theme.colors.muted} accessibilityLabel="Your question" />
         <View style={styles.divider} />
+        <Text style={styles.inputLabel}>Details (optional)</Text>
         <TextInput style={styles.bodyInput} value={body} onChangeText={setBody}
           maxLength={BODY_MAX} multiline textAlignVertical="top"
           placeholder="Add some context about your situation (optional)."
           placeholderTextColor={theme.colors.muted} accessibilityLabel="Question details" />
       </View>
-      <Text style={styles.hint}>{title.length}/{TITLE_MAX} characters</Text>
+      <Text style={styles.hint}>{title.trim().length}/{TITLE_MAX} title characters · minimum {TITLE_MIN}</Text>
       {showErrors && errors.title ? <Text style={styles.error}>{errors.title}</Text> : null}
     </View>
 
@@ -212,6 +221,11 @@ export default function AskScreen() {
       </View>
     </View>
 
+    {showErrors && !valid ? <View accessibilityLiveRegion="polite" aria-live="polite" style={styles.group}>
+      <Text style={styles.error}>Before you can review your question:</Text>
+      {errors.topic ? <Text style={styles.requirement}>Select a topic above: First job, Interviews, or Work life.</Text> : null}
+      {errors.title ? <Text style={styles.requirement}>{errors.title}</Text> : null}
+    </View> : null}
     <ActionButton label="Review question →" onPress={review} />
 
     <ConfirmDialog visible={!!pendingParent}
@@ -235,8 +249,9 @@ const styles = StyleSheet.create({
   bodyInput: { minHeight: 96, fontSize: 16, lineHeight: 23, color: colors.ink, paddingVertical: 4 },
   divider: { height: 1, backgroundColor: colors.border, marginVertical: spacing.sm },
   hint: { fontSize: 14, color: colors.ink },
-  // Dark text with an orange bar: orange text alone is too low-contrast to read (DP3 issue #14).
-  error: { fontSize: 15, fontWeight: '700', color: colors.ink, borderLeftWidth: 4, borderLeftColor: colors.orange, paddingLeft: 10 },
+  inputLabel: { fontSize: 14, fontWeight: '600', color: colors.green },
+  requirement: { fontSize: 14, color: colors.danger },
+  error: { fontSize: 15, fontWeight: '700', color: colors.danger, borderLeftWidth: 4, borderLeftColor: colors.danger, paddingLeft: 10 },
   options: { gap: spacing.sm },
   option: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: spacing.md, borderRadius: 16,
     backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.border },
