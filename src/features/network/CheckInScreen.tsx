@@ -65,20 +65,20 @@ function CheckInForm({ existing, initialGuideId }: { existing?: CheckIn; initial
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not save. Please try again.'); }
     finally { setSaving(false); }
   };
-  if (saved) return <Screen title="Check-in saved" subtitle="Your plan is saved on this device.">
+  if (saved) return <Screen title="Check-in saved" subtitle="Find your upcoming check-in in Your Circle.">
     <View style={styles.card}><Text style={styles.title}>{topic.trim()}</Text><Text style={styles.body}>{guide?.name}</Text>
       <Text style={styles.body}>{startsAt.toLocaleString()} · {duration} minutes</Text></View>
     <AppButton label="View Your Circle" onPress={() => router.replace('/network')} />
   </Screen>;
   if (!contacts.length) return <Screen title="Plan a check-in"><Text style={styles.body}>Add a graduate to your circle before scheduling a check-in.</Text><AppButton label="Find people" onPress={() => router.push('/people')} /></Screen>;
-  return <Screen title={review ? 'Review your check-in' : existing ? 'Edit check-in' : 'Plan a check-in'} subtitle="Choose a time for your personal plan. Confirm availability with your contact separately.">
+  return <Screen title={review ? 'Review your check-in' : existing ? 'Edit check-in' : 'Plan a check-in'} subtitle="Make time to connect. Choose a topic and a time that works for you.">
     {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
     {review ? <>
       <View style={styles.card}><Text style={styles.title}>{topic.trim()}</Text><Text style={styles.label}>{guide?.name}</Text>
         <Text style={styles.body}>{startsAt.toLocaleString()} · {duration} minutes</Text>
         <Text style={styles.body}>Time zone: {Intl.DateTimeFormat().resolvedOptions().timeZone}</Text></View>
       <AppButton label={saving ? 'Saving…' : 'Confirm and save'} disabled={saving} onPress={() => void save()} />
-      <AppButton label="Edit details" disabled={saving} onPress={() => { setReview(false); setError(''); }} />
+      <AppButton variant="secondary" label="Edit details" disabled={saving} onPress={() => { setReview(false); setError(''); }} />
     </> : <>
       <Text style={styles.label}>Contact</Text>
       <View style={styles.row}>{contacts.map((contact) => <Choice key={contact.id} label={contact.name} selected={guideId === contact.id} onPress={() => setGuideId(contact.id)} />)}</View>
@@ -92,9 +92,9 @@ function CheckInForm({ existing, initialGuideId }: { existing?: CheckIn; initial
       <Text style={styles.label}>Time</Text>
       <View style={styles.row}>{['09:00', '10:00', '12:00', '14:00', '16:00', '18:00'].map((slot) => <Choice key={slot} label={slot} selected={time === slot} onPress={() => setTime(slot)} />)}</View>
       <TextInput style={styles.input} value={time} onChangeText={setTime} placeholder="HH:mm (24-hour time)" accessibilityLabel="Check-in time, HH:mm in 24-hour time" autoCapitalize="none" />
-      <Text style={styles.body}>Times use your device's local time zone: {Intl.DateTimeFormat().resolvedOptions().timeZone}.</Text>
+      <Text style={styles.body}>Time zone: {Intl.DateTimeFormat().resolvedOptions().timeZone}</Text>
       <AppButton label="Review check-in" onPress={() => { const problem = validate(); setError(problem); if (!problem) setReview(true); }} />
     </>}
-    <AppButton label="Back to Your Circle" disabled={saving} onPress={() => router.replace('/network')} />
+    <AppButton variant="secondary" label="Back to Your Circle" disabled={saving} onPress={() => router.replace('/network')} />
   </Screen>;
 }

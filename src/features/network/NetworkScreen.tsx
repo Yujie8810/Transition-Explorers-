@@ -30,7 +30,7 @@ export default function NetworkScreen() {
     {network.loadError ? <AppButton label="Retry" onPress={network.reload} /> : null}
   </Screen>;
   return <Screen title="Your Circle" subtitle="Manage contacts, track requests, and make time to connect.">
-    <Text style={styles.body}>{contacts.length} contacts · {network.requests.length} saved requests · {upcoming.length} upcoming check-ins</Text>
+    <Text style={styles.body}>{contacts.length} {contacts.length === 1 ? 'contact' : 'contacts'} · {network.requests.length} {network.requests.length === 1 ? 'request' : 'requests'} · {upcoming.length} upcoming {upcoming.length === 1 ? 'check-in' : 'check-ins'}</Text>
     <AppButton label="Find people" onPress={() => router.push('/people')} />
     {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
     <Text style={styles.title}>Contacts</Text>
@@ -48,7 +48,7 @@ export default function NetworkScreen() {
       </> : <AppButton label="Remove contact" disabled={busy} onPress={() => setConfirmation(guide.id)} />}
     </View>)}
     <Text style={styles.title}>Upcoming check-ins</Text>
-    <Text style={styles.body}>Times use your device's local time zone. Confirm availability with your contact separately.</Text>
+    <Text style={styles.body}>Times shown in {Intl.DateTimeFormat().resolvedOptions().timeZone}.</Text>
     {!upcoming.length ? <Text style={styles.body}>No check-ins planned yet. Choose a contact to schedule one.</Text> : null}
     {upcoming.map((item) => <View key={item.id} style={styles.card}>
       <Text style={styles.title}>{item.topic}</Text>
@@ -61,8 +61,7 @@ export default function NetworkScreen() {
         <AppButton label="Keep check-in" disabled={busy} onPress={() => setConfirmation('')} />
       </> : <AppButton label="Cancel check-in" disabled={busy} onPress={() => setConfirmation(item.id)} />}
     </View>)}
-    <Text style={styles.title}>Saved guidance requests</Text>
-    <Text style={styles.body}>Requests are saved on this device. Messaging graduates is not connected yet.</Text>
+    <Text style={styles.title}>Guidance requests</Text>
     {!network.requests.length ? <Text style={styles.body}>Your requests from People will appear here.</Text> : null}
     {[...network.requests].reverse().map((request) => <View key={request.id} style={styles.card}>
       <Text style={styles.label}>{name(request.guideId)} · {request.kind === 'advice' ? 'Advice' : 'Check-in'}</Text>

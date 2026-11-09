@@ -5,21 +5,47 @@ import { NetworkProvider } from '../features/network/NetworkProvider';
 import { AdviceProvider } from '../features/advice/AdviceProvider';
 import { SavedAdviceProvider } from '../state/SavedAdviceContext';
 import { ProfileProvider } from '../state/ProfileContext';
+import { Text } from 'react-native';
+import { Screen } from '../components/Screen';
+import { AppButton } from '../components/AppButton';
+import { AuthProvider, useAuth } from '../features/auth/AuthProvider';
+import type { DemoAccount } from '../features/auth/accountStore';
+import type { ReactNode } from 'react';
 
-// The root stack places detail/account screens above the main tab navigator.
-// Pushing a screen adds native back navigation to the previous screen.
-// ProfileProvider shares local demo identity; it does not authenticate users.
-// need to implment: Aproteem + Aalvee, integrate authentication and account-based routing.
-// need to implment: module owners, register new review/confirmation/detail
-// screens here as your task flows grow; coordinate shared navigation edits.
 export default function RootLayout() {
-  return <ProfileProvider><NetworkProvider><AdviceProvider><SavedAdviceProvider>
-    <StatusBar style="dark" />
-    <Stack screenOptions={{
+  return <AuthProvider><StatusBar style="dark" /><SessionLayout /></AuthProvider>;
+}
+
+function SessionLayout() {
+  const { account, ready, loadError, reload } = useAuth();
+  if (!ready) return <Screen title="Career Commons">
+    <Text accessibilityRole={loadError ? 'alert' : undefined}>{loadError || 'Getting things ready…'}</Text>
+    {loadError ? <AppButton label="Try again" onPress={reload} /> : null}
+  </Screen>;
+
+  // Destroy account data, forms, and navigation history on logout/account change.
+  // Pending writes retain their original account's key; legacy keys are untouched.
+  return account
+    ? <AccountProviders key={account.id} account={account}><RootNavigator /></AccountProviders>
+    : <RootNavigator />;
+}
+
+function AccountProviders({ account, children }: { account: DemoAccount; children: ReactNode }) {
+  return <ProfileProvider accountId={account.id} initialProfile={account.initialProfile}>
+    <NetworkProvider accountId={account.id}><AdviceProvider accountId={account.id}>
+      <SavedAdviceProvider accountId={account.id}>{children}</SavedAdviceProvider>
+    </AdviceProvider></NetworkProvider>
+  </ProfileProvider>;
+}
+
+function RootNavigator() {
+  const { account } = useAuth();
+  return <Stack screenOptions={{
       headerStyle: { backgroundColor: theme.colors.background },
       headerTintColor: theme.colors.ink,
       contentStyle: { backgroundColor: theme.colors.background },
     }}>
+    <Stack.Protected guard={!!account}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="advice/[id]" options={{ title: 'Advice' }} />
       <Stack.Screen name="people/[id]" options={{ title: 'Graduate profile' }} />
@@ -29,8 +55,10 @@ export default function RootLayout() {
       <Stack.Screen name="my-questions/index" options={{ title: 'Your posted questions' }} />
       <Stack.Screen name="my-questions/[id]" options={{ title: 'Edit question' }} />
       <Stack.Screen name="profile" options={{ title: 'My profile' }} />
+    </Stack.Protected>
+    <Stack.Protected guard={!account}>
       <Stack.Screen name="login" options={{ title: 'Log in' }} />
       <Stack.Screen name="signup" options={{ title: 'Sign up' }} />
-    </Stack>
-  </SavedAdviceProvider></AdviceProvider></NetworkProvider></ProfileProvider>;
+    </Stack.Protected>
+  </Stack>;
 }

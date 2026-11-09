@@ -23,7 +23,7 @@ export default function PostedQuestionsScreen() {
     catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not delete. Please try again.'); setSelected(null); }
     finally { setDeleting(false); }
   };
-  return <Screen title="Your posted questions" subtitle="Manage questions you posted on this device.">
+  return <Screen title="Your posted questions" subtitle="Review, edit, and manage your questions.">
     {!ready ? <>
       <Text style={styles.body}>{loadError || 'Loading your questions…'}</Text>
       {loadError ? <AppButton label="Retry loading questions" onPress={reload} /> : null}

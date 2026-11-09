@@ -5,7 +5,6 @@ import { sampleGuides } from '../../data/sampleData';
 
 type NetworkData = { contactIds: string[]; requests: HelpRequest[]; checkIns: CheckIn[] };
 const emptyData: NetworkData = { contactIds: [], requests: [], checkIns: [] };
-const storageKey = 'transition-explorers.network.v1';
 type NetworkContextValue = NetworkData & {
   ready: boolean;
   loadError: string;
@@ -35,7 +34,8 @@ function readData(raw: string): NetworkData {
   return data;
 }
 
-export function NetworkProvider({ children }: { children: ReactNode }) {
+export function NetworkProvider({ children, accountId }: { children: ReactNode; accountId: string }) {
+  const storageKey = `transition-explorers.network.v1.${accountId}`;
   const [data, setData] = useState(emptyData);
   const current = useRef(data);
   const queue = useRef<Promise<void>>(Promise.resolve());
@@ -53,7 +53,7 @@ export function NetworkProvider({ children }: { children: ReactNode }) {
       if (active) setLoadError('Your circle could not be loaded. Please retry before making changes.');
     });
     return () => { active = false; };
-  }, [attempt]);
+  }, [attempt, storageKey]);
 
   const update = (change: (previous: NetworkData) => NetworkData) => {
     const task = queue.current.then(async () => {

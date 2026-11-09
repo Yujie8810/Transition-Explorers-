@@ -30,7 +30,7 @@ export default function HelpRequestScreen() {
   const handleSend = async () => {
     if (!graduate || saving) return;
     if (!message.trim()) {
-      setError('Please enter a message before sending.');
+      setError('Enter a message for your request.');
       return;
     }
 
@@ -51,7 +51,7 @@ export default function HelpRequestScreen() {
           Graduate not found. Please return to the People page and try again.
         </Text>
         <AppButton
-          label="Back to People"
+          label="Back to people"
           onPress={() => router.replace('/people')}
         />
       </Screen>
@@ -62,9 +62,9 @@ export default function HelpRequestScreen() {
     return (
       <Screen title="Request guidance">
         <View style={styles.card}>
-          <Text style={styles.successTitle}>Request saved!</Text>
+          <Text style={styles.successTitle}>Request saved</Text>
           <Text style={styles.bodyText}>
-            Your guidance request for {graduate.name} is saved on this device and appears in Your Circle. Messaging graduates is not connected yet.
+            Your guidance request for {graduate.name} is now in Your Circle.
           </Text>
 
           <Text style={styles.sectionTitle}>Request type</Text>
@@ -78,7 +78,7 @@ export default function HelpRequestScreen() {
 
         <AppButton label="View Your Circle" onPress={() => router.replace('/network')} />
         <AppButton
-          label="Back to Profile"
+          variant="secondary" label="Back to profile"
           onPress={() =>
             router.replace({
               pathname: '/people/[id]',
@@ -100,11 +100,11 @@ export default function HelpRequestScreen() {
       <Text style={styles.sectionTitle}>Your message</Text>
       <Text style={styles.bodyText}>{message.trim()}</Text>
     </View>
-    <Text style={styles.helperText}>This demo saves the request on your device; it does not message the graduate.</Text>
+    <Text style={styles.helperText}>Keep track of this request in Your Circle.</Text>
     {error ? <Text style={styles.errorText} accessibilityRole="alert">{error}</Text> : null}
     {network.loadError ? <><Text style={styles.errorText}>{network.loadError}</Text><AppButton label="Retry loading" onPress={network.reload} /></> : null}
     <AppButton label={saving ? 'Saving…' : 'Confirm and save request'} disabled={saving || !network.ready} onPress={() => void handleSend()} />
-    <AppButton label="Edit request" disabled={saving} onPress={() => { setReviewing(false); setError(''); }} />
+    <AppButton variant="secondary" label="Edit request" disabled={saving} onPress={() => { setReviewing(false); setError(''); }} />
   </Screen>;
 
   return (
@@ -153,7 +153,7 @@ export default function HelpRequestScreen() {
 
       {network.loadError ? <><Text style={styles.errorText}>{network.loadError}</Text><AppButton label="Retry loading" onPress={network.reload} /></> : null}
       <AppButton label="Review request" disabled={!network.ready} onPress={review} />
-      <AppButton label="Cancel" disabled={saving} onPress={() => router.back()} />
+      <AppButton variant="secondary" label="Cancel" disabled={saving} onPress={() => router.back()} />
     </Screen>
   );
 }

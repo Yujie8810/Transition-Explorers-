@@ -46,8 +46,8 @@ function QuestionForm({ question }: { question: PostedQuestion }) {
     finally { setSaving(false); }
   };
   if (saved) return <Screen title="Question updated">
-    <Text style={styles.body}>Your changes are saved on this device and appear in Explore.</Text>
-    <AppButton label="Back to your questions" onPress={back} />
+    <Text style={styles.body}>Your changes are saved. View your updated question in Explore.</Text>
+    <AppButton variant="secondary" label="Back to your questions" onPress={back} />
     <AppButton label="View updated question" onPress={() => router.push(`/advice/${question.id}`)} />
   </Screen>;
   return <Screen title="Edit your question" subtitle="Update the question, details, topic, or visibility.">
@@ -71,7 +71,7 @@ function QuestionForm({ question }: { question: PostedQuestion }) {
     </View>
     {error ? <Text style={styles.error} accessibilityRole="alert">{error}</Text> : null}
     <AppButton label={saving ? 'Saving…' : 'Save question changes'} disabled={saving} onPress={() => void save()} />
-    <AppButton label="Cancel editing" disabled={saving} onPress={() => dirty ? setDiscard(true) : back()} />
+    <AppButton variant="secondary" label="Cancel editing" disabled={saving} onPress={() => dirty ? setDiscard(true) : back()} />
     <ConfirmDialog visible={discard} title="Discard your edits?" message="Your published question will stay unchanged."
       cancelLabel="Keep editing" confirmLabel="Discard edits" onCancel={() => setDiscard(false)} onConfirm={back} />
   </Screen>;

@@ -17,7 +17,6 @@ type SavedAdviceContextValue = {
   removeAdvice: (answerId: string) => Promise<void>;
 };
 
-const storageKey = 'transition-explorers.saved-advice.v1';
 const SavedAdviceContext = createContext<SavedAdviceContextValue | null>(null);
 
 function readSaved(raw: string | null): SavedItem[] {
@@ -28,7 +27,8 @@ function readSaved(raw: string | null): SavedItem[] {
     : [];
 }
 
-export function SavedAdviceProvider({ children }: { children: ReactNode }) {
+export function SavedAdviceProvider({ children, accountId }: { children: ReactNode; accountId: string }) {
+  const storageKey = `transition-explorers.saved-advice.v1.${accountId}`;
   const [saved, setSaved] = useState<SavedItem[]>([]);
   const current = useRef(saved);
   const loading = useRef<Promise<void>>(Promise.resolve());
@@ -37,7 +37,7 @@ export function SavedAdviceProvider({ children }: { children: ReactNode }) {
     loading.current = AsyncStorage.getItem(storageKey)
       .then(raw => { current.current = readSaved(raw); setSaved(current.current); })
       .catch(() => {}); // Start with nothing saved if saved data cannot be read.
-  }, []);
+  }, [storageKey]);
 
   const update = async (change: (previous: SavedItem[]) => SavedItem[]) => {
     await loading.current; // Never overwrite saved tips that have not loaded yet.

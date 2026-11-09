@@ -7,28 +7,36 @@ import { useProfile, UserProfile } from '../../state/ProfileContext';
 import { useSavedAdvice } from '../../state/SavedAdviceContext';
 import { useNetwork } from '../network/NetworkProvider';
 import { theme } from '../../theme';
+import { useAuth } from '../auth/AuthProvider';
 
-/** Owner: Aalvee. Profile edits are local and shared through ProfileProvider.
- * need to implment: Aproteem + Aalvee, replace the demo identity with the logged-in
- * user and add real simulated-session logout after the authentication module lands.
- */
+/** Owner: Aalvee. Profile edits belong to the current local demo account. */
 export default function ProfileScreen() {
+  const { account, signOut, busy } = useAuth();
   const { profile, ready, loadError, reload, updateProfile } = useProfile();
   const { saved } = useSavedAdvice();
   const network = useNetwork();
   const [editing, setEditing] = useState(false);
   const [notice, setNotice] = useState('');
+  const [logoutError, setLogoutError] = useState('');
+  const logout = async () => {
+    if (busy) return;
+    setLogoutError('');
+    try { await signOut(); }
+    catch { setLogoutError('We could not log you out. Please try again.'); }
+  };
 
   if (!ready) return <Screen title="Your profile">
     <Text style={styles.body}>{loadError || 'Loading your profile…'}</Text>
     {loadError ? <AppButton label="Retry loading profile" onPress={reload} /> : null}
+    {logoutError ? <Text style={styles.error} accessibilityRole="alert">{logoutError}</Text> : null}
+    <AppButton variant="secondary" label={busy ? 'Logging out…' : 'Log out'} disabled={busy} onPress={() => void logout()} />
   </Screen>;
 
   if (editing) return <ProfileForm profile={profile} onCancel={() => setEditing(false)}
     onSave={async next => {
       await updateProfile(next);
       setEditing(false);
-      setNotice('Profile saved on this device.');
+      setNotice('Profile updated.');
     }} />;
 
   const initials = profile.name.split(/\s+/).filter(Boolean).map(part => part[0]).slice(0, 2).join('').toUpperCase();
@@ -38,6 +46,7 @@ export default function ProfileScreen() {
         <Text style={styles.initials}>{initials}</Text>
       </View>
       <Text style={styles.name}>{profile.name}</Text>
+      <Text style={styles.body}>{account?.email}</Text>
       <Text style={styles.body}>The University of Texas at Dallas</Text>
       <Text style={styles.badge}>UTD · {profile.affiliation}</Text>
       <Text style={styles.body}>{profile.program}</Text>
@@ -45,14 +54,13 @@ export default function ProfileScreen() {
     {notice ? <Text style={styles.notice} accessibilityLiveRegion="polite" role="status">{notice}</Text> : null}
     <AppButton label="Edit profile" onPress={() => { setNotice(''); setEditing(true); }} />
     <Text style={styles.heading}>Your support</Text>
-    <AppButton label="View your posted questions" onPress={() => router.push('/my-questions')} />
-    <AppButton label={`Saved advice (${saved.length})`} onPress={() => router.dismissTo('/saved')} />
-    <AppButton label={network.ready ? `Your Circle (${network.contactIds.length} contacts)` : 'Your Circle'}
+    <AppButton variant="secondary" label="View your posted questions" onPress={() => router.push('/my-questions')} />
+    <AppButton variant="secondary" label={`Saved advice (${saved.length})`} onPress={() => router.dismissTo('/saved')} />
+    <AppButton variant="secondary" label={network.ready
+      ? `Your Circle (${network.contactIds.length} ${network.contactIds.length === 1 ? 'contact' : 'contacts'})` : 'Your Circle'}
       onPress={() => router.push('/network')} />
-    <View style={styles.note}>
-      <Text style={styles.heading}>Demo profile</Text>
-      <Text style={styles.body}>This fictional profile is saved on this device. Login, signup, and UTD verification are still being developed.</Text>
-    </View>
+    {logoutError ? <Text style={styles.error} accessibilityRole="alert">{logoutError}</Text> : null}
+    <AppButton variant="secondary" label={busy ? 'Logging out…' : 'Log out'} disabled={busy} onPress={() => void logout()} />
   </Screen>;
 }
 
@@ -92,7 +100,7 @@ function ProfileForm({ profile, onSave, onCancel }: {
     </View>
     {error ? <Text style={styles.error} accessibilityRole="alert">{error}</Text> : null}
     <AppButton label={saving ? 'Saving…' : 'Save profile'} disabled={saving} onPress={() => void save()} />
-    <AppButton label="Cancel changes" disabled={saving} onPress={onCancel} />
+    <AppButton variant="secondary" label="Cancel changes" disabled={saving} onPress={onCancel} />
   </Screen>;
 }
 
@@ -109,7 +117,6 @@ const styles = StyleSheet.create({
   badge: { alignSelf: 'flex-start', padding: 10, borderRadius: 12, backgroundColor: colors.lime,
     color: colors.green, fontSize: 15, fontWeight: '700' },
   notice: { fontSize: 16, lineHeight: 24, color: colors.green, fontWeight: '600' },
-  note: { padding: 20, borderRadius: 16, borderWidth: 1, borderColor: colors.border, gap: 8 },
   label: { fontSize: 16, fontWeight: '600', color: colors.ink },
   input: { minHeight: 48, padding: 14, borderWidth: 1, borderColor: colors.border,
     borderRadius: 12, backgroundColor: colors.surface, fontSize: 16, color: colors.ink },

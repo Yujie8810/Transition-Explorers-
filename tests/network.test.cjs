@@ -40,7 +40,7 @@ function mount(storage) {
   }});
   const render = () => {
     cursor = 0;
-    const result = module.exports.NetworkProvider({ children: null }).props.value;
+    const result = module.exports.NetworkProvider({ children: null, accountId: 'test-account' }).props.value;
     effects.splice(0).forEach((effect) => effect());
     return result;
   };

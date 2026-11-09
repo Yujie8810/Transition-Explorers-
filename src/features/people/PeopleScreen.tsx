@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 
 import { Screen } from '../../components/Screen';
@@ -37,7 +37,7 @@ export default function PeopleScreen() {
 
   return (
     <Screen
-      title="Find Your People"
+      title="Find your people"
       subtitle="Connect with graduates who can help you navigate your first job."
     >
       <TextInput
@@ -51,21 +51,23 @@ export default function PeopleScreen() {
 
       <Text style={styles.sectionTitle}>Filter by expertise</Text>
 
-      <View style={styles.filterContainer}>
+      <View style={styles.filterContainer} accessibilityRole="radiogroup" accessibilityLabel="Filter by expertise">
         {expertiseOptions.map((expertise) => {
           const isSelected = selectedExpertise === expertise;
 
           return (
-            <Text
+            <Pressable
               key={expertise}
+              accessibilityRole="radio"
+              accessibilityState={{ checked: isSelected }}
               onPress={() => setSelectedExpertise(expertise)}
               style={[
                 styles.filterOption,
                 isSelected && styles.selectedFilter,
               ]}
             >
-              {expertise}
-            </Text>
+              <Text style={[styles.filterText, isSelected && styles.selectedFilterText]}>{expertise}</Text>
+            </Pressable>
           );
         })}
       </View>
@@ -86,7 +88,7 @@ export default function PeopleScreen() {
           </Text>
 
           <AppButton
-            label="View Profile"
+            label="View profile"
             onPress={() =>
               router.push({
                 pathname: '/people/[id]',
@@ -104,6 +106,7 @@ export default function PeopleScreen() {
       )}
 
       <AppButton
+        variant="secondary"
         label="View Your Circle"
         onPress={() => router.push('/network')}
       />
@@ -132,16 +135,18 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   filterOption: {
+    minHeight: 44,
+    justifyContent: 'center',
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 20,
     backgroundColor: theme.colors.surface,
-    color: theme.colors.ink,
     overflow: 'hidden',
   },
+  filterText: { color: theme.colors.ink, fontSize: 14 },
+  selectedFilterText: { color: theme.colors.surface },
   selectedFilter: {
     backgroundColor: theme.colors.green,
-    color: theme.colors.surface,
   },
   resultCount: {
     color: theme.colors.muted,

@@ -7,11 +7,6 @@ export type UserProfile = {
   program: string;
 };
 
-// A fictional local profile lets Profile be developed before authentication.
-// need to implment: Aproteem, connect authenticated users to this shared contract.
-// This storage key is device-wide; account isolation belongs to the auth integration.
-const demoProfile: UserProfile = { name: 'Aalvee Ahtav', affiliation: 'Student', program: 'Computer Science' };
-const storageKey = 'transition-explorers.profile.v1';
 const ProfileContext = createContext<{
   profile: UserProfile;
   ready: boolean;
@@ -20,8 +15,8 @@ const ProfileContext = createContext<{
   updateProfile: (profile: UserProfile) => Promise<void>;
 } | null>(null);
 
-function readProfile(raw: string | null): UserProfile {
-  if (!raw) return demoProfile;
+function readProfile(raw: string | null, initialProfile: UserProfile): UserProfile {
+  if (!raw) return initialProfile;
   const value = JSON.parse(raw);
   if (!value || typeof value.name !== 'string' || !value.name.trim()
     || !['Student', 'Graduate'].includes(value.affiliation) || typeof value.program !== 'string') {
@@ -30,8 +25,12 @@ function readProfile(raw: string | null): UserProfile {
   return { name: value.name, affiliation: value.affiliation, program: value.program };
 }
 
-export function ProfileProvider({ children }: { children: ReactNode }) {
-  const [profile, setProfile] = useState<UserProfile>(demoProfile);
+// The root remounts all personal-data providers when the account ID changes.
+export function ProfileProvider({ children, accountId, initialProfile }: {
+  children: ReactNode; accountId: string; initialProfile: UserProfile;
+}) {
+  const storageKey = `transition-explorers.profile.v1.${accountId}`;
+  const [profile, setProfile] = useState<UserProfile>(initialProfile);
   const [ready, setReady] = useState(false);
   const [loadError, setLoadError] = useState('');
   const [attempt, setAttempt] = useState(0);
@@ -41,13 +40,13 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     setReady(false);
     setLoadError('');
     AsyncStorage.getItem(storageKey).then(raw => {
-      const stored = readProfile(raw);
+      const stored = readProfile(raw, initialProfile);
       if (active) { setProfile(stored); setReady(true); }
     }).catch(() => {
       if (active) setLoadError('Your profile could not be loaded. Try again before editing.');
     });
     return () => { active = false; };
-  }, [attempt]);
+  }, [attempt, storageKey, initialProfile]);
 
   const updateProfile = async (next: UserProfile) => {
     if (!ready) throw new Error('Wait for your profile to load.');

@@ -4,8 +4,7 @@ import { sampleAdvice } from '../../data/sampleData';
 import { Advice, Topic } from '../../types';
 
 /** Shares locally posted questions across Explore, Ask, details, and Profile.
- * need to implment: auth owners, scope storage and ownership to the signed-in user.
- * Until authentication is connected, 'you' identifies this device's demo user.
+ * 'you' identifies the current demo account inside its own storage namespace.
  */
 export type Visibility = 'Public' | 'Anonymous';
 export type QuestionDraft = { title: string; body: string; topic: Topic; visibility: Visibility; followUpOf?: string };
@@ -24,7 +23,6 @@ type AdviceContextValue = {
   deleteQuestion: (id: string) => Promise<void>;
 };
 
-const storageKey = 'transition-explorers.advice.v1';
 const AdviceContext = createContext<AdviceContextValue | null>(null);
 export const isPostedQuestion = (post: Advice): post is PostedQuestion => 'visibility' in post;
 
@@ -52,7 +50,8 @@ function cleanDraft(draft: QuestionDraft): QuestionDraft {
     ...(draft.followUpOf ? { followUpOf: draft.followUpOf } : {}) };
 }
 
-export function AdviceProvider({ children }: { children: ReactNode }) {
+export function AdviceProvider({ children, accountId }: { children: ReactNode; accountId: string }) {
+  const storageKey = `transition-explorers.advice.v1.${accountId}`;
   const [posted, setPosted] = useState<PostedQuestion[]>([]);
   const [ready, setReady] = useState(false);
   const [loadError, setLoadError] = useState('');
@@ -72,7 +71,7 @@ export function AdviceProvider({ children }: { children: ReactNode }) {
       if (active) setLoadError('Your questions could not be loaded. Retry before making changes.');
     });
     return () => { active = false; };
-  }, [attempt]);
+  }, [attempt, storageKey]);
 
   // Serialize writes so posting/editing/deleting never overwrite a concurrent change.
   const update = (change: (questions: PostedQuestion[]) => PostedQuestion[]) => {

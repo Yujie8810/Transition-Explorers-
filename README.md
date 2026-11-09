@@ -11,10 +11,11 @@ Team: Aalvee Ahtav, Aproteem Majumder, Hoa Doan, Mourede Otchere, Yujie Duan.
 - **Ask:** editable questions, similar experiences, review/edit/publish, and linked follow-ups.
 - **People:** graduate search/filtering, profiles, and guidance requests with review/edit/confirm.
 - **Your Circle:** contacts, saved requests, check-in scheduling, review, rescheduling, cancellation, and history.
-- **Profile:** a fictional local user, editable identity, links to Saved/Your Circle, and **View your posted questions** to view/edit/delete local posts. Edits persist and update Explore; deletion requires confirmation and leaves any follow-ups as independent posts. Seeded community questions cannot be edited or deleted.
-- **Storage:** AsyncStorage keeps profile, questions, saved tips, contacts, requests, and check-ins on the device/browser.
+- **Accounts:** local demo signup, email-only login, persisted sessions, and logout from Profile. Signup collects name, email, program, and Student/Graduate affiliation. The app opens Login when signed out and Explore when signed in. Main tabs and detail routes require a demo session.
+- **Profile:** the current demo account's editable identity, links to Saved/Your Circle, and **View your posted questions** to view/edit/delete local posts. Edits persist and update Explore; deletion requires confirmation and leaves any follow-ups as independent posts. Seeded community questions cannot be edited or deleted.
+- **Storage:** AsyncStorage keeps profile, questions, saved tips, contacts, requests, and check-ins on the device/browser, separated by a stable local account ID.
 
-**Login/signup/logout and verification remain unfinished.** The app opens Explore directly and uses a fictional demo profile (Alex Morgan), not an authenticated account. Requests are simulated locally; they do not send messages. Check-ins are personal plans, not confirmed mentor availability. There is no backend or cross-device synchronization. Data is not yet isolated by account.
+**Accounts are a simulation, not secure authentication.** Use made-up emails such as `aproteem@example.test`. No passwords are collected, no email is sent, and UTD membership is not verified. Anyone using the same device/browser can open a registered demo account by entering its email. Requests are simulated locally; they do not send messages. Check-ins are personal plans, not confirmed mentor availability. There is no backend or cross-device synchronization. Existing pre-account device-wide data is preserved under its original storage keys, but is not assigned to any new account.
 
 The shared dataset contains **7 graduates, 13 questions, and 30 answers**. Posted questions are local additions, initially without answers.
 
@@ -168,9 +169,10 @@ Stop a running server with Ctrl+C. No backend, API keys, or app test credentials
 
 ```sh
 npm run typecheck
+npm test
 ```
 
-Run that command to check TypeScript before sharing changes. It does not replace manually testing your task flow.
+Run these commands to check TypeScript and the automated tests before sharing changes. They do not replace manually testing your task flow.
 
 ## Where each teammate works
 
@@ -213,7 +215,7 @@ Use `useLocalSearchParams` from `expo-router` to read an `[id]` route parameter 
 
 - Reuse `Screen`, `AppButton`, and `theme`; coordinate edits to these shared files.
 - Keep route files small. Put feature-specific components and logic inside the feature folder.
-- Reuse `AdviceProvider`, `SavedAdviceProvider`, `NetworkProvider`, and `ProfileProvider` for their respective shared data. Each already uses AsyncStorage. `AdviceProvider` exposes `postedQuestions`, `postQuestion`, `updateQuestion`, and `deleteQuestion`; use these shared operations so Explore and Profile stay in sync. Question mutations wait for loading and serialize storage writes. Coordinate account/session integration with Aproteem before adding authentication or changing storage keys.
+- Reuse `AdviceProvider`, `SavedAdviceProvider`, `NetworkProvider`, and `ProfileProvider` for their respective shared data. Each requires an `accountId` and uses AsyncStorage keys ending in that ID. The root mounts these providers only for a signed-in account and remounts them when the account changes; preserve that boundary to prevent stale data or drafts appearing for another account. `AdviceProvider` exposes `postedQuestions`, `postQuestion`, `updateQuestion`, and `deleteQuestion`; use these shared operations so Explore and Profile stay in sync. Question mutations wait for loading and serialize storage writes. Coordinate session or storage changes with Aproteem.
 - Import seed data rather than duplicating the same people/posts in multiple modules. Expand the data enough to support realistic tasks.
 - Stack screens receive a back button when pushed from another screen. Test returning without losing drafts.
 - Keep account simulation explicit; do not store real passwords in seed data.
@@ -277,13 +279,26 @@ The checkpoint needs 2–3 slides and a live demo within **5 minutes**. At least
 - Rehearsal, phone checks, and proposed timeline: [checkpoint guide](docs/checkpoint.md).
 - Main demo: **Explore → filter/search → open a question → save one answer → Saved → reopen the question**.
 - Before class: test on the presentation phone, verify persistence after restarting, and confirm the live connection. Browser testing and successful bundling do not establish physical-device readiness.
-- State limitations honestly: fictional data, local storage, simulated requests/check-ins, and unfinished authentication.
+- State limitations honestly: fictional data, local storage, simulated accounts and requests/check-ins, and no verified membership or secure authentication.
 
-### Profile/authentication handoff
+### Local account/session integration
 
-`src/state/ProfileContext.tsx` exports `UserProfile`, `ProfileProvider`, and `useProfile()`. The default is fictional Alex Morgan; edits persist under `transition-explorers.profile.v1`. `updateProfile` validates and saves name, program, and Student/Graduate affiliation. Profile does not store passwords or claim verified UTD membership.
+`src/features/auth/AuthProvider.tsx` exports `AuthProvider` and `useAuth()` with `account`, `ready`, `busy`, `loadError`, `reload`, `signUp`, `signIn`, and `signOut`. The account registry and active session share one AsyncStorage entry, `transition-explorers.demo-accounts.v1`. Account writes are serialized; failed writes leave the last committed session intact. Unreadable account storage shows a retry screen instead of silently discarding accounts.
 
-**need to implment:** Aproteem + Aalvee, connect this shared profile to the eventual simulated session, add login/signup/logout behavior, and decide how to separate/reset user data between accounts. Keep this coordinated with the other providers because their records are currently device-wide.
+`src/state/ProfileContext.tsx` exports `UserProfile`, `ProfileProvider`, and `useProfile()`. Signup supplies the initial profile. Edits persist under `transition-explorers.profile.v1.<accountId>`. `updateProfile` validates and saves name, program, and Student/Graduate affiliation. The signup email identifies the account and is not changed by editing the profile.
+
+Advice, Saved, and Network retain their existing key prefixes and append `.<accountId>`. The `authorId: 'you'` marker is interpreted within that account's private local questions. Seed questions and answers remain shared fictional content. Logging out preserves personal data for the next login, removes access to protected routes, and unmounts account providers and forms. Pending writes keep their original account's namespace. Legacy keys without an account ID are left untouched and are not automatically migrated.
+
+Automated checks cover registration validation, normalized/duplicate emails, session restoration, logout, failed storage writes, corrupt storage, account isolation across all four providers, and writes completing after an account switch.
+
+Manual account checks on the target phone:
+
+1. Start signed out, open signup, check invalid/empty input, and register `aproteem@example.test`.
+2. Confirm Explore opens and Profile shows the signup identity. Edit the profile, post a question, save advice, and add a Circle contact.
+3. Restart the app; confirm the session and personal data restore.
+4. Log out from Profile. Back navigation and direct links to Profile, advice, and other protected routes must return to Login.
+5. Create a second account; confirm its profile, questions, Saved, and Circle start independently.
+6. Log out and log back into the first account; confirm its edits and personal data remain.
 
 ## References
 
@@ -295,6 +310,8 @@ The checkpoint needs 2–3 slides and a live demo within **5 minutes**. At least
 The final Source, ReadMe, and Team PDFs, final presentation, and narrated/subtitled video still need to be prepared by the assigned team members. This repository README is a development guide, not a replacement for those submissions.
 
 ## Verification
+
+November 9 account integration: TypeScript, the Ask/Network/Auth automated tests, and Android/iOS/web Metro exports passed. Mobile-sized Chromium checks passed for login validation, signup, profile initialization/edit/persistence, session restoration after reload, logout/back navigation, protected deep links, and switching between accounts, with no observed browser runtime errors. Automated provider checks cover personal-data isolation for Profile, questions, Saved, and Circle, including an old account's write finishing after a switch. Physical-phone testing is still required using the account checklist above.
 
 After the SDK 58 upgrade, TypeScript checking, all 20 Expo Doctor checks, and Metro exports for Android, iOS, and web passed. Physical-device testing still needs to be done by the team. npm install reports 8 dependency advisories (5 low and 3 high). These remain unresolved; review compatible fixes separately before applying dependency changes.
 

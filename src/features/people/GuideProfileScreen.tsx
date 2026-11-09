@@ -20,6 +20,7 @@ export default function GuideProfileScreen() {
     return (
       <Screen title="Graduate profile">
         <Text style={styles.emptyMessage}>Graduate not found</Text>
+        <AppButton label="Back to people" onPress={() => router.replace('/people')} />
       </Screen>
     );
   }
@@ -53,7 +54,8 @@ export default function GuideProfileScreen() {
         }}
       />
       <AppButton
-        label="Ask for Guidance"
+        variant="secondary"
+        label="Ask for guidance"
         onPress={() =>
           router.push({
             pathname: '/people/request',
