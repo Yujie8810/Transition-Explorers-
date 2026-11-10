@@ -9,7 +9,8 @@ import { Text } from 'react-native';
 import { Screen } from '../components/Screen';
 import { AppButton } from '../components/AppButton';
 import { AuthProvider, useAuth } from '../features/auth/AuthProvider';
-import type { DemoAccount } from '../features/auth/accountStore';
+import { AnswersProvider } from '../features/advice/AnswersProvider';
+import type { Account } from '../features/auth/accountStore';
 import type { ReactNode } from 'react';
 
 export default function RootLayout() {
@@ -30,12 +31,30 @@ function SessionLayout() {
     : <RootNavigator />;
 }
 
-function AccountProviders({ account, children }: { account: DemoAccount; children: ReactNode }) {
-  return <ProfileProvider accountId={account.id} initialProfile={account.initialProfile}>
-    <NetworkProvider accountId={account.id}><AdviceProvider accountId={account.id}>
-      <SavedAdviceProvider accountId={account.id}>{children}</SavedAdviceProvider>
-    </AdviceProvider></NetworkProvider>
-  </ProfileProvider>;
+function AccountProviders({
+  account,
+  children,
+}: {
+  account: Account;
+  children: ReactNode;
+}) {
+  return (
+    <ProfileProvider
+      accountId={account.id}
+      initialProfile={account.initialProfile}
+    >
+      <NetworkProvider accountId={account.id}>
+        <AdviceProvider accountId={account.id}>
+          {/* Root remounts these providers when the account changes. */}
+          <AnswersProvider>
+            <SavedAdviceProvider accountId={account.id}>
+              {children}
+            </SavedAdviceProvider>
+          </AnswersProvider>
+        </AdviceProvider>
+      </NetworkProvider>
+    </ProfileProvider>
+  );
 }
 
 function RootNavigator() {

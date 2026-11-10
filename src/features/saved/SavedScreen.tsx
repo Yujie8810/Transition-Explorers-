@@ -5,7 +5,7 @@ import { SavedItem, useSavedAdvice } from '../../state/SavedAdviceContext';
 import { theme } from '../../theme';
 import { GuideByline } from '../advice/AdviceCard';
 import { useAdvice } from '../advice/AdviceProvider';
-import { findAnswer, findGuide } from '../advice/answers';
+import { useAnswers } from '../advice/AnswersProvider';
 import { ActionButton, AdviceScreen, announce, Snackbar } from '../advice/ui';
 
 /**
@@ -19,8 +19,20 @@ import { ActionButton, AdviceScreen, announce, Snackbar } from '../advice/ui';
 const UNDO_SECONDS = 6;
 
 export default function SavedScreen() {
-  const { saved, saveAdvice, removeAdvice } = useSavedAdvice();
+  const {
+    saved, saveAdvice, removeAdvice,
+    ready: savesReady,
+    loadError: savesError,
+    reload: reloadSaves,
+  } = useSavedAdvice();
   const { findPost } = useAdvice();
+  const {
+    findAnswer,
+    findGuide,
+    ready: answersReady,
+    loadError: answersError,
+    reload: reloadAnswers,
+  } = useAnswers();
   const [status, setStatus] = useState<{ message: string; undo?: SavedItem } | null>(null);
   const hideStatus = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -54,6 +66,30 @@ export default function SavedScreen() {
         onAction={status.undo ? () => undo(status.undo!) : undefined} /> : null}
     </View>
   );
+
+  // Wait for saved records before showing an empty list.
+  if (!savesReady) {
+    return withStatus(
+      <AdviceScreen title="Saved advice">
+        <Text>{savesError || 'Loading saved advice…'}</Text>
+        {savesError ? (
+          <ActionButton label="Retry loading saved advice" onPress={reloadSaves} />
+        ) : null}
+      </AdviceScreen>,
+    );
+  }
+
+  // Wait before deciding that a saved answer is unavailable.
+  if (!answersReady) {
+    return withStatus(
+      <AdviceScreen title="Saved advice">
+        <Text>{answersError || 'Loading answers…'}</Text>
+        {answersError ? (
+          <ActionButton label="Retry loading answers" onPress={reloadAnswers} />
+        ) : null}
+      </AdviceScreen>,
+    );
+  }
 
   if (saved.length === 0) {
     return withStatus(<AdviceScreen eyebrow="SAVED" title="Advice worth keeping" subtitle="Tips you save from answers will appear here.">

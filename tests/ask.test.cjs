@@ -38,7 +38,7 @@ function mount() {
   const imports = { react, 'react/jsx-runtime': { jsx, jsxs: jsx } };
   const { questionRules } = load('src/features/advice/AdviceProvider.tsx', {
     ...imports,
-    '@react-native-async-storage/async-storage': {},
+    './adviceApi': {},
     '../../data/sampleData': {},
   });
   const Screen = load('src/features/ask/AskScreen.tsx', {

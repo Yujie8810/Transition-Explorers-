@@ -16,9 +16,9 @@ function load(file, imports = {}) {
   return module.exports;
 }
 
-const { createAccountStore, accountStorageKey } = load('src/features/auth/accountStore.ts');
+const { accountFromUser, validateRegistration } = load('src/features/auth/accountStore.ts');
 const registration = (email = 'aproteem@example.test') => ({
-  email, name: 'Aproteem', program: 'Computer Science', affiliation: 'Student',
+  email, password: 'test-password', name: 'Aproteem', program: 'Computer Science', affiliation: 'Student',
 });
 function storage(entries = {}) {
   return {
@@ -28,74 +28,26 @@ function storage(entries = {}) {
   };
 }
 
-test('signup normalizes identity and restores the same session after restart', async () => {
-  const disk = storage();
-  const store = createAccountStore(disk);
-  assert.equal(await store.restore(), null);
-  const account = await store.signUp({ ...registration(' APROTEEM@example.test '), name: ' Aproteem ' });
-  assert.equal(account.email, 'aproteem@example.test');
-  assert.equal(account.initialProfile.name, 'Aproteem');
-  const restored = await createAccountStore(disk).restore();
-  assert.equal(restored.id, account.id);
-  await store.signOut();
-  assert.equal(await createAccountStore(disk).restore(), null);
-  assert.equal((await store.signIn(' APROTEEM@example.test ')).id, account.id);
-});
-
-test('invalid registration, duplicate emails, and unknown logins do not change the session', async () => {
-  const disk = storage(); const store = createAccountStore(disk);
-  for (const invalid of [{ name: ' ' }, { email: 'bad' }, { program: '' }, { affiliation: 'Visitor' }]) {
-    await assert.rejects(store.signUp({ ...registration(), ...invalid }));
-    assert.equal(disk.data.size, 0);
+test('registration normalizes identity and rejects missing credentials or profile fields', () => {
+  const result = validateRegistration({ ...registration(' APROTEEM@example.test '), name: ' Aproteem ' });
+  assert.equal(result.email, 'aproteem@example.test');
+  assert.equal(result.name, 'Aproteem');
+  assert.equal(result.password, 'test-password');
+  for (const invalid of [{ name: ' ' }, { email: 'bad' }, { password: '' }, { password: 'short' }, { program: '' }, { affiliation: 'Visitor' }]) {
+    assert.throws(() => validateRegistration({ ...registration(), ...invalid }));
   }
-  const account = await store.signUp(registration());
-  await assert.rejects(store.signUp(registration('APROTEEM@example.test')), /already exists/);
-  await assert.rejects(store.signIn('missing@example.test'), /Sign up/);
-  assert.equal((await store.restore()).id, account.id);
 });
 
-test('concurrent duplicate signup creates exactly one account', async () => {
-  const disk = storage(); const store = createAccountStore(disk);
-  const results = await Promise.allSettled([store.signUp(registration()), store.signUp(registration())]);
-  assert.equal(results.filter(result => result.status === 'fulfilled').length, 1);
-  assert.equal(JSON.parse(disk.data.get(accountStorageKey)).accounts.length, 1);
+test('Supabase user mapping preserves the server-issued ID and never uses a local identity', () => {
+  const account = accountFromUser({ id: 'server-uuid', email: 'person@example.test',
+    user_metadata: { full_name: 'Person', major: 'CS', affiliation: 'Graduate' } });
+  assert.equal(account.id, 'server-uuid');
+  assert.equal(account.initialProfile.affiliation, 'Graduate');
 });
 
-test('failed signup, login, and logout writes preserve the last committed session and allow retry', async () => {
-  const disk = storage(); const store = createAccountStore(disk);
-  disk.failWrite = true;
-  await assert.rejects(store.signUp(registration()), /could not be saved/);
-  assert.equal(await store.restore(), null);
-  disk.failWrite = false;
-  const account = await store.signUp(registration());
-  disk.failWrite = true;
-  await assert.rejects(store.signOut(), /could not be saved/);
-  assert.equal((await createAccountStore(disk).restore()).id, account.id);
-  disk.failWrite = false;
-  await store.signOut();
-  disk.failWrite = true;
-  await assert.rejects(store.signIn(account.email), /could not be saved/);
-  assert.equal(await store.restore(), null);
-  disk.failWrite = false;
-  assert.equal((await store.signIn(account.email)).id, account.id);
-});
-
-test('unreadable or corrupt account data blocks writes and can be retried without erasing data', async () => {
-  const disk = storage({ [accountStorageKey]: '{broken' }); const store = createAccountStore(disk);
-  await assert.rejects(store.restore());
-  await assert.rejects(store.signUp(registration()));
-  assert.equal(disk.data.get(accountStorageKey), '{broken');
-  disk.data.delete(accountStorageKey);
-  disk.failRead = true;
-  await assert.rejects(store.restore());
-  disk.failRead = false;
-  assert.equal(await store.restore(), null);
-  await store.signUp(registration());
-});
-
-// Exercise the real personal-data providers with controllable storage across
+// Exercise the remaining local Circle provider with controllable storage across
 // account remounts. Seed legacy keys to catch accidental migration/leakage.
-function mountProvider(file, exportName, disk, accountId, initialProfile = registration()) {
+function mountProvider(file, exportName, disk, accountId, api = {}) {
   const slots = []; const effects = [];
   let cursor = 0;
   const react = {
@@ -121,17 +73,18 @@ function mountProvider(file, exportName, disk, accountId, initialProfile = regis
     react, 'react/jsx-runtime': { jsx, jsxs: jsx },
     '@react-native-async-storage/async-storage': { __esModule: true, default: disk },
     '../../data/sampleData': { sampleAdvice: [], sampleGuides: [{ id: 'taylor' }] },
+    './adviceApi': api,
   });
   const render = () => {
     cursor = 0;
-    const value = exports[exportName]({ accountId, initialProfile, children: null }).props.value;
+    const value = exports[exportName]({ accountId, children: null }).props.value;
     effects.splice(0).forEach(effect => effect());
     return value;
   };
   return { render, async ready() { render(); await new Promise(setImmediate); return render(); } };
 }
 
-test('all four providers isolate accounts, restore edits, and leave legacy device data untouched', async () => {
+test('local Circle data isolates accounts, restores requests, and leaves legacy device data untouched', async () => {
   const disk = storage({
     'transition-explorers.profile.v1': JSON.stringify({ name: 'Legacy user', affiliation: 'Graduate', program: 'Legacy' }),
     'transition-explorers.advice.v1': '["legacy questions"]',
@@ -140,23 +93,14 @@ test('all four providers isolate accounts, restore edits, and leave legacy devic
   });
   const legacy = [...disk.data.entries()];
   const modules = [
-    ['src/state/ProfileContext.tsx', 'ProfileProvider',
-      value => value.updateProfile({ name: 'Edited Aproteem', program: 'Software Engineering', affiliation: 'Graduate' }),
-      value => value.profile.name, 'Edited Aproteem', 'Account B'],
-    ['src/features/advice/AdviceProvider.tsx', 'AdviceProvider',
-      value => value.postQuestion({ title: 'How do I start my first job?', body: '', topic: 'First job', visibility: 'Public' }),
-      value => value.postedQuestions.length, 1, 0],
     ['src/features/network/NetworkProvider.tsx', 'NetworkProvider',
       value => value.saveRequest({ guideId: 'taylor', message: 'Help please', kind: 'advice' }),
       value => value.requests.length, 1, 0],
-    ['src/state/SavedAdviceContext.tsx', 'SavedAdviceProvider',
-      value => value.saveAdvice('answer-a', 'question-a'),
-      value => value.saved.length, 1, 0],
   ];
   for (const [file, provider, change, select, expectedA, expectedB] of modules) {
     const accountA = mountProvider(file, provider, disk, 'local-a');
     await change(await accountA.ready());
-    const accountB = await mountProvider(file, provider, disk, 'local-b', { ...registration(), name: 'Account B' }).ready();
+    const accountB = await mountProvider(file, provider, disk, 'local-b').ready();
     assert.equal(select(accountB), expectedB, `${provider}: account B must start independently`);
     const restoredA = await mountProvider(file, provider, disk, 'local-a').ready();
     assert.equal(select(restoredA), expectedA, `${provider}: account A must retain its data`);
@@ -166,20 +110,60 @@ test('all four providers isolate accounts, restore edits, and leave legacy devic
 
 test('writes finishing after an account switch remain in the original account namespace', async () => {
   const disk = storage();
-  const accountA = mountProvider('src/features/advice/AdviceProvider.tsx', 'AdviceProvider', disk, 'local-a');
-  const adviceA = await accountA.ready();
+  const accountA = mountProvider('src/features/network/NetworkProvider.tsx', 'NetworkProvider', disk, 'local-a');
+  const networkA = await accountA.ready();
   const originalWrite = disk.setItem.bind(disk);
   let release;
   disk.setItem = async (key, value) => {
     await new Promise(resolve => { release = resolve; });
     await originalWrite(key, value);
   };
-  const pending = adviceA.postQuestion({ title: 'Question from account A', body: '', topic: 'First job', visibility: 'Public' });
+  const pending = networkA.saveRequest({ guideId: 'taylor', message: 'Request from account A', kind: 'advice' });
   await new Promise(setImmediate);
-  const accountB = mountProvider('src/features/advice/AdviceProvider.tsx', 'AdviceProvider', disk, 'local-b');
-  assert.equal((await accountB.ready()).postedQuestions.length, 0);
+  const accountB = mountProvider('src/features/network/NetworkProvider.tsx', 'NetworkProvider', disk, 'local-b');
+  assert.equal((await accountB.ready()).requests.length, 0);
   release(); await pending;
-  assert.equal(accountB.render().postedQuestions.length, 0);
-  assert.equal(JSON.parse(disk.data.get('transition-explorers.advice.v1.local-a')).length, 1);
-  assert.equal(disk.data.has('transition-explorers.advice.v1.local-b'), false);
+  assert.equal(accountB.render().requests.length, 0);
+  assert.equal(JSON.parse(disk.data.get('transition-explorers.network.v1.local-a')).requests.length, 1);
+  assert.equal(disk.data.has('transition-explorers.network.v1.local-b'), false);
+});
+
+// This fake models shared remote content for provider tests; it does not verify RLS.
+test('database questions reload across mounts and expose only owned questions in Profile', async () => {
+  const rows = new Map();
+  const apiFor = accountId => ({
+    async fetchQuestions() {
+      return [...rows.values()].map(row => ({ ...row, is_mine: row.author_id === accountId }));
+    },
+    async createQuestion(draft) {
+      const id = 'server-question';
+      rows.set(id, { ...draft, id, author_id: accountId, author_name: 'Account A',
+        created_at: '2026-11-10T12:00:00Z', follow_up_of: null });
+      return id;
+    },
+    async editQuestion(id, draft) { rows.set(id, { ...rows.get(id), ...draft }); },
+    async removeQuestion(id) { rows.delete(id); },
+  });
+  const mountQuestions = account => mountProvider('src/features/advice/AdviceProvider.tsx',
+    'AdviceProvider', storage(), account, apiFor(account));
+  const first = mountQuestions('account-a');
+  await first.ready();
+  const posted = await first.render().postQuestion({ title: 'How do I start my first job?',
+    body: '', topic: 'First job', visibility: 'Public' });
+  assert.equal(posted.id, 'server-question');
+  const second = mountQuestions('account-a');
+  const restored = await second.ready();
+  assert.equal(restored.postedQuestions[0].postedAt, '2026-11-10T12:00:00Z');
+  await restored.updateQuestion(posted.id, { title: 'How do I prepare for my first job?',
+    body: 'Edited remotely', topic: 'First job', visibility: 'Public' });
+  const other = mountQuestions('account-b');
+  const otherQuestions = await other.ready();
+  assert.equal(otherQuestions.posts[0].body, 'Edited remotely');
+  assert.equal(otherQuestions.postedQuestions.length, 0);
+  await assert.rejects(otherQuestions.deleteQuestion(posted.id), /does not belong to you/);
+  await assert.rejects(otherQuestions.updateQuestion(posted.id, {}), /does not belong to you/);
+  const owner = mountQuestions('account-a');
+  await owner.ready();
+  await owner.render().deleteQuestion(posted.id);
+  assert.equal((await mountQuestions('account-a').ready()).posts.length, 0);
 });

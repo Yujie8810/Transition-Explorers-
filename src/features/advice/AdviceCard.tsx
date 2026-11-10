@@ -2,12 +2,10 @@ import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { theme } from '../../theme';
 import { Advice, Guide, Topic } from '../../types';
-import { isPostedQuestion, Visibility } from './AdviceProvider';
-import { answersFor, gradLabel, initials, nameLine, roleLine } from './answers';
-
-/** The same "posted by you" wording on cards, the detail page and the confirmation. */
-export const postedByLabel = (visibility: Visibility) =>
-  visibility === 'Anonymous' ? 'Posted by you · anonymous' : 'Posted by you';
+import { isPostedQuestion } from './AdviceProvider';
+import { questionAuthorLabel } from './questionAuthor';
+import { gradLabel, initials, nameLine, roleLine } from './answers';
+import { useAnswers } from './AnswersProvider';
 
 // The thin colored bar beside each card's label, one color per topic (decoration only).
 const TOPIC_ACCENT: Record<Topic, string> = {
@@ -16,12 +14,13 @@ const TOPIC_ACCENT: Record<Topic, string> = {
 
 /** A tappable question preview that opens the advice detail screen. Used by the feed and similar lists. */
 export function AdviceCard({ post }: { post: Advice }) {
-  const mine = isPostedQuestion(post);
+  const authorLabel = isPostedQuestion(post) ? questionAuthorLabel(post) : '';
+  const { answersFor } = useAnswers();
   const count = answersFor(post.id).length;
   return (
     <Pressable onPress={() => router.push(`/advice/${post.id}`)}
       accessibilityRole="button"
-      accessibilityLabel={`Open ${post.title}. ${post.topic}, ${count} ${count === 1 ? 'answer' : 'answers'}${mine ? ', posted by you' : ''}`}
+      accessibilityLabel={`Open ${post.title}. ${post.topic}, ${count} ${count === 1 ? 'answer' : 'answers'}${authorLabel ? `. ${authorLabel}` : ''}`}
       style={({ pressed }) => [styles.card, pressed && { opacity: 0.8 }]}>
       <View style={styles.row}>
         <View style={[styles.accent, { backgroundColor: TOPIC_ACCENT[post.topic] }]} />
@@ -29,7 +28,7 @@ export function AdviceCard({ post }: { post: Advice }) {
       </View>
       <Text style={styles.title}>{post.title}</Text>
       {post.body ? <Text style={styles.body} numberOfLines={2}>{post.body}</Text> : null}
-      {mine ? <Text style={styles.badge}>{postedByLabel(post.visibility)}</Text> : null}
+      {authorLabel ? <Text style={styles.badge}>{authorLabel}</Text> : null}
     </Pressable>
   );
 }

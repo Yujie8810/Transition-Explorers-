@@ -1,11 +1,13 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View, TextInput } from 'react-native';
 import { useSavedAdvice } from '../../state/SavedAdviceContext';
 import { theme } from '../../theme';
-import { AdviceCard, GuideByline, postedByLabel } from './AdviceCard';
+import { AdviceCard, GuideByline } from './AdviceCard';
+import { questionAuthorLabel } from './questionAuthor';
 import { isPostedQuestion, useAdvice } from './AdviceProvider';
-import { answersFor, findGuide, firstName } from './answers';
+import { firstName } from './answers';
+import { useAnswers } from './AnswersProvider';
 import { findSimilar } from './search';
 import { ActionButton, AdviceScreen, announce, SectionLabel, TextLink } from './ui';
 
@@ -21,7 +23,25 @@ export default function AdviceDetailScreen() {
   // The [id] part of the URL, e.g. "first-week" for /advice/first-week.
   const { id } = useLocalSearchParams<{ id: string }>();
   const { posts, findPost } = useAdvice();
-  const { isSaved, saveAdvice, removeAdvice } = useSavedAdvice();
+  const {
+    isSaved, saveAdvice, removeAdvice,
+    ready: savesReady,
+    busy: savesBusy,
+    loadError: savesError,
+    reload: reloadSaves,
+  } = useSavedAdvice();
+  const {
+    answersFor,
+    findGuide,
+    postAnswer,
+    ready: answersReady,
+    loadError: answersError,
+    reload: reloadAnswers,
+  } = useAnswers();
+  const [answerDraft, setAnswerDraft] = useState('');
+  const [answerPosting, setAnswerPosting] = useState(false);
+  const [answerError, setAnswerError] = useState('');
+  const [answerNotice, setAnswerNotice] = useState('');
   const [notice, setNotice] = useState<{ answerId: string; text: string; viewSaved: boolean } | null>(null);
   const hideNotice = useRef<ReturnType<typeof setTimeout>>(undefined);
   const post = findPost(id);
@@ -38,6 +58,28 @@ export default function AdviceDetailScreen() {
   const similar = findSimilar(`${post.title} ${post.body}`, post.topic, posts, { excludeId: post.id });
   const posted = isPostedQuestion(post) ? post : null;
   const parent = posted?.followUpOf ? findPost(posted.followUpOf) : undefined;
+
+  const submitAnswer = async () => {
+    if (answerPosting) return;
+
+    setAnswerPosting(true);
+    setAnswerError('');
+    setAnswerNotice('');
+
+    try {
+      await postAnswer(post.id, answerDraft);
+      setAnswerDraft('');
+      setAnswerNotice('Your answer was posted.');
+    } catch (cause) {
+      setAnswerError(
+        cause instanceof Error
+          ? cause.message
+          : 'Your answer could not be posted.',
+      );
+    } finally {
+      setAnswerPosting(false);
+    }
+  };
 
   // The confirmation appears under the answer that was tapped, so it is always on screen.
   const showNotice = (answerId: string, text: string, viewSaved: boolean) => {
@@ -65,20 +107,71 @@ export default function AdviceDetailScreen() {
     <View style={styles.question}>
       <Text style={styles.questionLabel}>THE QUESTION</Text>
       <Text style={styles.questionText}>{post.body || post.title}</Text>
-      {posted ? <Text style={styles.questionMeta}>{postedByLabel(posted.visibility)}</Text> : null}
+      {posted ? (
+        <Text style={styles.questionMeta}>
+          {questionAuthorLabel(posted)}
+        </Text>
+      ) : null}
       {parent ? <TextLink label={`Follow-up to: ${parent.title} ›`} accessibilityLabel={`Open the original question, ${parent.title}`}
         onPress={() => router.push(`/advice/${parent.id}`)} /> : null}
     </View>
 
+    {/* Only database questions can receive real answers. */}
+    {posted ? (
+      <View style={styles.answer}>
+        <Text style={styles.questionLabel}>SHARE YOUR EXPERIENCE</Text>
+        <TextInput
+          accessibilityLabel="Your answer"
+          placeholder="What advice would you give?"
+          placeholderTextColor={colors.muted}
+          value={answerDraft}
+          onChangeText={setAnswerDraft}
+          multiline
+          maxLength={5000}
+          editable={!answerPosting}
+          style={styles.answerInput}
+        />
+        {answerError ? <Text accessibilityRole="alert">{answerError}</Text> : null}
+        {answerNotice ? <Text accessibilityLiveRegion="polite">{answerNotice}</Text> : null}
+        <ActionButton
+          label={answerPosting ? 'Posting…' : 'Post answer'}
+          disabled={answerPosting || !answersReady || !answerDraft.trim()}
+          onPress={() => void submitAnswer()}
+        />
+      </View>
+    ) : null}
+
+    {!answersReady ? (
+      <View>
+        <Text>{answersError || 'Loading answers…'}</Text>
+        {answersError ? <ActionButton label="Retry loading answers" onPress={reloadAnswers} /> : null}
+      </View>
+    ) : (
+      <TextLink label="Refresh answers" onPress={reloadAnswers} />
+    )}
+
+    {/* Explain why saving is unavailable and offer a retry. */}
+    {!savesReady ? (
+      <View>
+        <Text>{savesError || 'Loading saved advice…'}</Text>
+        {savesError ? (
+          <ActionButton label="Retry loading saved advice" onPress={reloadSaves} />
+        ) : null}
+      </View>
+    ) : null}
+
     <SectionLabel>Voices from the field</SectionLabel>
-    {answers.length === 0 ? (
+    {!answersReady ? null : answers.length === 0 ? (
       <Text style={styles.empty}>No answers yet. The similar experiences below may help in the meantime.</Text>
     ) : answers.map(answer => {
       const guide = findGuide(answer.guideId);
       const saved = isSaved(answer.id);
       return (
         <View key={answer.id} style={styles.answer}>
-          {guide ? (
+          {guide ? posted ? (
+            // Real authors do not yet have a People profile route.
+            <GuideByline guide={guide} />
+          ) : (
             <Pressable onPress={() => router.push(`/people/${guide.id}`)} accessibilityRole="link"
               accessibilityLabel={`View ${firstName(guide.name)}’s profile`}
               style={({ pressed }) => pressed && { opacity: 0.7 }}>
@@ -88,13 +181,15 @@ export default function AdviceDetailScreen() {
           <Text style={styles.answerBody}>“{answer.body}”</Text>
           <View style={styles.actions}>
             <Pressable onPress={() => toggleSave(answer.id)}
-              accessibilityRole="button" accessibilityState={{ selected: saved }} aria-selected={saved}
+              disabled={!savesReady || savesBusy}
+              accessibilityRole="button"
+              accessibilityState={{ selected: saved, disabled: !savesReady || savesBusy }} aria-selected={saved}
               accessibilityLabel={saved ? `Saved. ${guide?.name ?? 'This'}’s tip is in Saved` : `Save this tip from ${guide?.name ?? 'this graduate'}`}
               accessibilityHint={saved ? 'Double tap to remove it from Saved' : 'Adds it to your Saved tab'}
               style={({ pressed }) => [styles.action, saved && styles.actionSaved, pressed && { opacity: 0.7 }]}>
               <Text style={[styles.actionText, saved && styles.actionTextSaved]}>{saved ? 'Saved ✓' : 'Save this tip'}</Text>
             </Pressable>
-            {guide ? (
+            {guide && !posted ? (
               <Pressable onPress={() => router.push({ pathname: '/people/request', params: { id: guide.id } })}
                 accessibilityRole="button" accessibilityLabel={`Ask ${guide.name} for advice`}
                 style={({ pressed }) => [styles.action, pressed && { opacity: 0.7 }]}>
@@ -137,6 +232,9 @@ const styles = StyleSheet.create({
   answer: { padding: 20, borderRadius: 18, backgroundColor: colors.surface,
     borderWidth: 1, borderColor: colors.border, gap: spacing.md },
   answerBody: { fontSize: 18, lineHeight: 27, color: colors.ink },
+  answerInput: { minHeight: 120, padding: 14, borderWidth: 1,
+    borderColor: colors.border, borderRadius: 12, color: colors.ink,
+    fontSize: 16, textAlignVertical: 'top' },
   actions: { flexDirection: 'row', gap: spacing.sm },
   // Two equal buttons side by side; long labels wrap inside the button instead of pushing it to a new row.
   action: { flex: 1, minHeight: 48, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 14,

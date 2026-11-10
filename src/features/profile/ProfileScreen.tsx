@@ -9,7 +9,7 @@ import { useNetwork } from '../network/NetworkProvider';
 import { theme } from '../../theme';
 import { useAuth } from '../auth/AuthProvider';
 
-/** Owner: Aalvee. Profile edits belong to the current local demo account. */
+/** Owner: Aalvee. Profile edits belong to the signed-in Supabase account. */
 export default function ProfileScreen() {
   const { account, signOut, busy } = useAuth();
   const { profile, ready, loadError, reload, updateProfile } = useProfile();

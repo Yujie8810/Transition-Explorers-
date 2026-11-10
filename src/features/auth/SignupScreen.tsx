@@ -12,6 +12,8 @@ export default function SignupScreen() {
   const { signUp, busy } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmation, setConfirmation] = useState(false);
   const [program, setProgram] = useState('');
   const [affiliation, setAffiliation] = useState<UserProfile['affiliation'] | null>(null);
   const [error, setError] = useState('');
@@ -20,18 +22,27 @@ export default function SignupScreen() {
     setError('');
     if (!affiliation) { setError('Select Student or Graduate.'); return; }
     try {
-      const input = validateRegistration({ name, email, program, affiliation });
+      const input = validateRegistration({ name, email, password, program, affiliation });
       Keyboard.dismiss();
-      await signUp(input);
+      const result = await signUp(input);
+      setPassword('');
+      setConfirmation(result.needsConfirmation);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Your account could not be saved. Please try again.');
     }
   };
+  if (confirmation) return <Screen title="Check your email">
+    <Text style={authStyles.body}>Check your inbox for a confirmation email. If one arrives, confirm your address, then return here to log in with your password.</Text>
+    <Link href="/login" replace style={authStyles.link}>Return to login</Link>
+  </Screen>;
   return <Screen title="Join the community" subtitle="A place for UTD students and recent graduates.">
     <AuthField label="Name" value={name} onChangeText={value => { setName(value); setError(''); }}
       maxLength={80} autoCapitalize="words" autoComplete="name" editable={!busy} />
     <AuthField label="Email" value={email} onChangeText={value => { setEmail(value); setError(''); }}
       keyboardType="email-address" autoCapitalize="none" autoCorrect={false} autoComplete="email" maxLength={254} editable={!busy} />
+    <AuthField label="Password (at least 8 characters)" value={password}
+      onChangeText={value => { setPassword(value); setError(''); }} secureTextEntry
+      autoCapitalize="none" autoCorrect={false} autoComplete="new-password" editable={!busy} />
     <AuthField label="Program or field of study" value={program}
       onChangeText={value => { setProgram(value); setError(''); }} maxLength={100} editable={!busy} />
     <Text style={authStyles.label}>UTD affiliation</Text>
