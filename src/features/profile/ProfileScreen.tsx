@@ -57,7 +57,7 @@ export default function ProfileScreen() {
     <PeopleProfileEditor />
     <Text style={styles.heading}>Your support</Text>
     <AppButton variant="secondary" label="View your posted questions" onPress={() => router.push('/my-questions')} />
-    <AppButton variant="secondary" label={`Saved advice (${saved.length})`} onPress={() => router.dismissTo('/saved')} />
+    <AppButton variant="secondary" label={`Saved advice (${saved.length})`} onPress={() => router.push('/saved')} />
     <AppButton variant="secondary" label={network.ready
       ? `Your Circle (${network.contactIds.length} ${network.contactIds.length === 1 ? 'contact' : 'contacts'})` : 'Your Circle'}
       onPress={() => router.push('/network')} />

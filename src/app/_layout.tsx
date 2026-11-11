@@ -9,6 +9,7 @@ import { ProfileProvider } from '../state/ProfileContext';
 import { Text } from 'react-native';
 import { Screen } from '../components/Screen';
 import { AppButton } from '../components/AppButton';
+import { HomeButton } from '../components/HomeButton';
 import { AuthProvider, useAuth } from '../features/auth/AuthProvider';
 import { AnswersProvider } from '../features/advice/AnswersProvider';
 import type { Account } from '../features/auth/accountStore';
@@ -65,6 +66,7 @@ function RootNavigator() {
   return <Stack screenOptions={{
       headerStyle: { backgroundColor: theme.colors.background },
       headerTintColor: theme.colors.ink,
+      headerRight: () => <HomeButton />,
       contentStyle: { backgroundColor: theme.colors.background },
     }}>
     <Stack.Protected guard={!!account}>
@@ -73,12 +75,16 @@ function RootNavigator() {
       <Stack.Screen name="people/[id]" options={{ title: 'Graduate profile' }} />
       <Stack.Screen name="people/request" options={{ title: 'Request guidance' }} />
       <Stack.Screen name="network/index" options={{ title: 'Your Circle' }} />
+      <Stack.Screen name="network/requests-received" options={{ title: 'Requests received' }} />
+      <Stack.Screen name="network/guidance-requests" options={{ title: 'Your guidance requests' }} />
+      <Stack.Screen name="network/check-ins" options={{ title: 'Check-ins' }} />
+      <Stack.Screen name="network/contacts" options={{ title: 'Contacts' }} />
       <Stack.Screen name="network/chat/[id]" options={{ title: 'Guidance chat' }} />
       <Stack.Screen name="network/propose-time" options={{ title: 'Propose a new time' }} />
       <Stack.Screen name="network/check-in" options={{ title: 'Schedule a check-in' }} />
       <Stack.Screen name="my-questions/index" options={{ title: 'Your posted questions' }} />
       <Stack.Screen name="my-questions/[id]" options={{ title: 'Edit question' }} />
-      <Stack.Screen name="profile" options={{ title: 'My profile' }} />
+      <Stack.Screen name="saved" options={{ title: 'Saved' }} />
     </Stack.Protected>
     <Stack.Protected guard={!account}>
       <Stack.Screen name="login" options={{ title: 'Log in' }} />

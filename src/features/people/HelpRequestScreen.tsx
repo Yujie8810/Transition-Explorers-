@@ -19,7 +19,6 @@ export default function HelpRequestScreen() {
 
   const graduate = guides.find((guide) => guide.id === graduateId);
 
-  const [kind, setKind] = useState<'advice' | 'check-in'>('advice');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [sent, setSent] = useState(false);
@@ -41,10 +40,21 @@ export default function HelpRequestScreen() {
     setError('');
     setSaving(true);
     try {
-      await network.saveRequest({ guideId: graduate.id, message, kind });
+      await network.saveRequest({ guideId: graduate.id, message, kind: 'advice' });
       setSent(true);
     } catch {
       setError('Your request could not be saved. Please try again.');
+    } finally { setSaving(false); }
+  };
+
+  const scheduleCheckIn = async () => {
+    if (!graduate || saving || !network.ready) return;
+    setSaving(true); setError('');
+    try {
+      if (!network.contactIds.includes(graduate.id)) await network.addContact(graduate.id);
+      router.push({ pathname: '/network/check-in', params: { guideId: graduate.id } });
+    } catch {
+      setError('Could not open check-in scheduling. Please try again.');
     } finally { setSaving(false); }
   };
 
@@ -80,7 +90,7 @@ export default function HelpRequestScreen() {
 
           <Text style={styles.sectionTitle}>Request type</Text>
           <Text style={styles.bodyText}>
-            {kind === 'advice' ? 'Advice' : 'Check-in'}
+            Advice
           </Text>
 
           <Text style={styles.sectionTitle}>Your message</Text>
@@ -107,7 +117,7 @@ export default function HelpRequestScreen() {
       <Text style={styles.name}>{graduate.name}</Text>
       <Text style={styles.bodyText}>{graduate.role}</Text>
       <Text style={styles.sectionTitle}>Request type</Text>
-      <Text style={styles.bodyText}>{kind === 'advice' ? 'Advice' : 'Check-in'}</Text>
+      <Text style={styles.bodyText}>Advice</Text>
       <Text style={styles.sectionTitle}>Your message</Text>
       <Text style={styles.bodyText}>{message.trim()}</Text>
     </View>
@@ -133,9 +143,10 @@ export default function HelpRequestScreen() {
 
       <View style={styles.optionContainer} accessibilityRole="radiogroup">
         {(['advice', 'check-in'] as const).map(value => <Pressable key={value}
-          accessibilityRole="radio" accessibilityState={{ checked: kind === value }}
-          onPress={() => setKind(value)} style={[styles.option, kind === value && styles.selectedOption]}>
-          <Text style={{ color: kind === value ? theme.colors.surface : theme.colors.ink }}>
+          accessibilityRole="radio" accessibilityState={{ checked: value === 'advice', disabled: saving || !network.ready }}
+          disabled={saving || !network.ready}
+          onPress={value === 'check-in' ? scheduleCheckIn : () => {}} style={[styles.option, value === 'advice' && styles.selectedOption]}>
+          <Text style={{ color: value === 'advice' ? theme.colors.surface : theme.colors.ink }}>
             {value === 'advice' ? 'Advice' : 'Check-in'}
           </Text>
         </Pressable>)}
