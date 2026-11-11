@@ -1,6 +1,7 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { theme } from '../theme';
+import { PeopleProvider } from '../features/people/PeopleProvider';
 import { NetworkProvider } from '../features/network/NetworkProvider';
 import { AdviceProvider } from '../features/advice/AdviceProvider';
 import { SavedAdviceProvider } from '../state/SavedAdviceContext';
@@ -43,6 +44,7 @@ function AccountProviders({
       accountId={account.id}
       initialProfile={account.initialProfile}
     >
+      <PeopleProvider accountId={account.id}>
       <NetworkProvider accountId={account.id}>
         <AdviceProvider accountId={account.id}>
           {/* Root remounts these providers when the account changes. */}
@@ -53,6 +55,7 @@ function AccountProviders({
           </AnswersProvider>
         </AdviceProvider>
       </NetworkProvider>
+      </PeopleProvider>
     </ProfileProvider>
   );
 }
@@ -70,6 +73,8 @@ function RootNavigator() {
       <Stack.Screen name="people/[id]" options={{ title: 'Graduate profile' }} />
       <Stack.Screen name="people/request" options={{ title: 'Request guidance' }} />
       <Stack.Screen name="network/index" options={{ title: 'Your Circle' }} />
+      <Stack.Screen name="network/chat/[id]" options={{ title: 'Guidance chat' }} />
+      <Stack.Screen name="network/propose-time" options={{ title: 'Propose a new time' }} />
       <Stack.Screen name="network/check-in" options={{ title: 'Schedule a check-in' }} />
       <Stack.Screen name="my-questions/index" options={{ title: 'Your posted questions' }} />
       <Stack.Screen name="my-questions/[id]" options={{ title: 'Edit question' }} />

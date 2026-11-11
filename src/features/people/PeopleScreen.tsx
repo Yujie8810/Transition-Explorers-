@@ -1,25 +1,27 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { router } from 'expo-router';
+import { useFocusEffect, router } from 'expo-router';
 
 import { Screen } from '../../components/Screen';
 import { AppButton } from '../../components/AppButton';
-import { sampleGuides } from '../../data/sampleData';
+import { usePeople } from '../people/PeopleProvider';
 import { theme } from '../../theme';
 
 export default function PeopleScreen() {
+  const { people: guides, loadError, ready, reload } = usePeople();
+  useFocusEffect(useCallback(() => { reload(); }, [reload]));
   const [searchText, setSearchText] = useState('');
   const [selectedExpertise, setSelectedExpertise] = useState('All');
 
   const expertiseOptions = [
     'All',
-    ...new Set(sampleGuides.flatMap((guide) => guide.expertise)),
+    ...new Set(guides.flatMap((guide) => guide.expertise)),
   ];
 
   const filteredGuides = useMemo(() => {
     const query = searchText.trim().toLowerCase();
 
-    return sampleGuides.filter((guide) => {
+    return guides.filter((guide) => {
       const matchesSearch =
         guide.name.toLowerCase().includes(query) ||
         guide.role.toLowerCase().includes(query) ||
@@ -33,13 +35,17 @@ export default function PeopleScreen() {
 
       return matchesSearch && matchesExpertise;
     });
-  }, [searchText, selectedExpertise]);
+  }, [searchText, selectedExpertise, guides]);
 
   return (
     <Screen
       title="Find your people"
       subtitle="Connect with graduates who can help you navigate your first job."
     >
+      <AppButton variant="secondary" label="Add or edit your People profile" onPress={() => router.push('/profile')} />
+      {!ready && !loadError ? <Text>Loading community profiles…</Text> : null}
+      {loadError ? <Text accessibilityRole="alert">{loadError}</Text> : null}
+      <AppButton variant="secondary" label="Refresh people" onPress={reload} />
       <TextInput
         style={styles.searchInput}
         placeholder="Search name, role, or skill..."

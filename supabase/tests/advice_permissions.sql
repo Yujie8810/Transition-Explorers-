@@ -3,8 +3,8 @@
 -- All fixtures and attempted mutations are rolled back, even on success.
 begin;
 
-select set_config('test.account_a', 'REPLACE_WITH_ACCOUNT_A_UUID', true);
-select set_config('test.account_b', 'REPLACE_WITH_ACCOUNT_B_UUID', true);
+select set_config('test.account_a', '0c3db29f-c99c-4620-bf3e-a26a970a29da', true);
+select set_config('test.account_b', 'c2165341-932d-4d2f-804f-26fd76b71aaf', true);
 
 do $$
 begin

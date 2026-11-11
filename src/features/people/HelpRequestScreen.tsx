@@ -1,20 +1,23 @@
+import { useAuth } from '../auth/AuthProvider';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
 import { Screen } from '../../components/Screen';
 import { AppButton } from '../../components/AppButton';
-import { sampleGuides } from '../../data/sampleData';
+import { usePeople } from '../people/PeopleProvider';
 import { theme } from '../../theme';
 import { useNetwork } from '../network/NetworkProvider';
 
 export default function HelpRequestScreen() {
+  const { guides, loadError: peopleError, reload: reloadPeople, ready: peopleReady } = usePeople();
   const network = useNetwork();
+  const { account } = useAuth();
   const [saving, setSaving] = useState(false);
   const { id } = useLocalSearchParams<{ id?: string | string[] }>();
   const graduateId = Array.isArray(id) ? id[0] : id;
 
-  const graduate = sampleGuides.find((guide) => guide.id === graduateId);
+  const graduate = guides.find((guide) => guide.id === graduateId);
 
   const [kind, setKind] = useState<'advice' | 'check-in'>('advice');
   const [message, setMessage] = useState('');
@@ -24,6 +27,7 @@ export default function HelpRequestScreen() {
   const [reviewing, setReviewing] = useState(false);
   const review = () => {
     if (!message.trim()) { setError('Please enter a message before reviewing.'); return; }
+    if (message.trim().length > 2000) { setError('Keep your request within 2000 characters.'); return; }
     setError(''); setReviewing(true);
   };
 
@@ -44,6 +48,8 @@ export default function HelpRequestScreen() {
     } finally { setSaving(false); }
   };
 
+  if (!graduate && !peopleReady) return <Screen title="Community profile"><Text>{peopleError || 'Loading profile…'}</Text>{peopleError ? <AppButton label="Retry" onPress={reloadPeople} /> : null}</Screen>;
+
   if (!graduate) {
     return (
       <Screen title="Request guidance">
@@ -58,13 +64,18 @@ export default function HelpRequestScreen() {
     );
   }
 
+  if (graduate.id === account?.id) return <Screen title="Your profile">
+    <Text style={styles.bodyText}>You cannot request guidance from yourself.</Text>
+    <AppButton label="Back to people" onPress={() => router.replace('/people')} />
+  </Screen>;
+
   if (sent) {
     return (
       <Screen title="Request guidance">
         <View style={styles.card}>
-          <Text style={styles.successTitle}>Request saved</Text>
+          <Text style={styles.successTitle}>{graduate.listed !== undefined ? 'Request sent' : 'Request saved'}</Text>
           <Text style={styles.bodyText}>
-            Your guidance request for {graduate.name} is now in Your Circle.
+            {graduate.listed !== undefined ? `Your request was sent to ${graduate.name}. Their response will appear in Your Circle.` : `Your demo request for ${graduate.name} is saved in Your Circle.`}
           </Text>
 
           <Text style={styles.sectionTitle}>Request type</Text>
@@ -100,10 +111,10 @@ export default function HelpRequestScreen() {
       <Text style={styles.sectionTitle}>Your message</Text>
       <Text style={styles.bodyText}>{message.trim()}</Text>
     </View>
-    <Text style={styles.helperText}>Keep track of this request in Your Circle.</Text>
+    <Text style={styles.helperText}>{graduate.listed !== undefined ? 'Send this request to the graduate and track their response in Your Circle.' : 'This is a demo graduate. The request will be saved in Your Circle without delivery.'}</Text>
     {error ? <Text style={styles.errorText} accessibilityRole="alert">{error}</Text> : null}
     {network.loadError ? <><Text style={styles.errorText}>{network.loadError}</Text><AppButton label="Retry loading" onPress={network.reload} /></> : null}
-    <AppButton label={saving ? 'Saving…' : 'Confirm and save request'} disabled={saving || !network.ready} onPress={() => void handleSend()} />
+    <AppButton label={saving ? 'Saving…' : graduate.listed !== undefined ? 'Confirm and send request' : 'Confirm and save request'} disabled={saving || !network.ready} onPress={() => void handleSend()} />
     <AppButton variant="secondary" label="Edit request" disabled={saving} onPress={() => { setReviewing(false); setError(''); }} />
   </Screen>;
 
@@ -141,6 +152,7 @@ export default function HelpRequestScreen() {
           if (error) setError('');
         }}
         multiline
+        maxLength={2000}
         textAlignVertical="top"
         accessibilityLabel="Guidance request message"
       />

@@ -3,7 +3,7 @@ import { Pressable, Text, TextInput, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Screen } from '../../components/Screen';
 import { AppButton } from '../../components/AppButton';
-import { sampleGuides } from '../../data/sampleData';
+import { usePeople } from '../people/PeopleProvider';
 import { CheckIn } from '../../types';
 import { useNetwork } from './NetworkProvider';
 import { styles } from './styles';
@@ -18,21 +18,27 @@ function Choice({ label, selected, onPress }: { label: string; selected: boolean
 }
 
 export default function CheckInScreen() {
+  const { ready: peopleReady, loadError: peopleError, reload: reloadPeople } = usePeople();
   const network = useNetwork();
   const params = useLocalSearchParams<{ guideId?: string | string[]; checkInId?: string | string[] }>();
   if (!network.ready) return <Screen title="Plan a check-in">
     <Text style={styles.body}>{network.loadError || 'Loading your circle…'}</Text>
     {network.loadError ? <AppButton label="Retry" onPress={network.reload} /> : null}
   </Screen>;
+  if (!peopleReady && network.contactIds.some(id => id.includes('-'))) return <Screen title="Plan a check-in">
+    <Text style={styles.body}>{peopleError || 'Loading your contacts…'}</Text>
+    {peopleError ? <AppButton label="Retry profiles" onPress={reloadPeople} /> : null}
+  </Screen>;
   const id = first(params.checkInId);
   const existing = network.checkIns.find((item) => item.id === id);
-  if (id && !existing) return <Screen title="Check-in unavailable"><Text style={styles.body}>This check-in no longer exists.</Text><AppButton label="Your Circle" onPress={() => router.replace('/network')} /></Screen>;
+  if (id && (!existing || existing.status === 'cancelled')) return <Screen title="Check-in unavailable"><Text style={styles.body}>This check-in no longer exists.</Text><AppButton label="Your Circle" onPress={() => router.replace('/network')} /></Screen>;
   return <CheckInForm key={id ?? first(params.guideId) ?? 'new'} existing={existing} initialGuideId={first(params.guideId)} />;
 }
 
 function CheckInForm({ existing, initialGuideId }: { existing?: CheckIn; initialGuideId?: string }) {
   const network = useNetwork();
-  const contacts = sampleGuides.filter((guide) => network.contactIds.includes(guide.id));
+  const { guides } = usePeople();
+  const contacts = guides.filter((guide) => network.contactIds.includes(guide.id));
   const [guideId, setGuideId] = useState(existing?.guideId ?? initialGuideId ?? contacts[0]?.id ?? '');
   const [topic, setTopic] = useState(existing?.topic ?? '');
   const [duration, setDuration] = useState<15 | 30>(existing?.durationMinutes ?? 15);
@@ -65,7 +71,8 @@ function CheckInForm({ existing, initialGuideId }: { existing?: CheckIn; initial
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not save. Please try again.'); }
     finally { setSaving(false); }
   };
-  if (saved) return <Screen title="Check-in saved" subtitle="Find your upcoming check-in in Your Circle.">
+  if (saved) return <Screen title={guide?.listed !== undefined ? 'Invitation sent' : 'Check-in saved'}
+    subtitle={guide?.listed !== undefined ? 'The graduate can accept or decline. Their decision will appear in Your Circle.' : 'Find your personal plan in Your Circle.'}>
     <View style={styles.card}><Text style={styles.title}>{topic.trim()}</Text><Text style={styles.body}>{guide?.name}</Text>
       <Text style={styles.body}>{startsAt.toLocaleString()} · {duration} minutes</Text></View>
     <AppButton label="View Your Circle" onPress={() => router.replace('/network')} />
@@ -77,7 +84,8 @@ function CheckInForm({ existing, initialGuideId }: { existing?: CheckIn; initial
       <View style={styles.card}><Text style={styles.title}>{topic.trim()}</Text><Text style={styles.label}>{guide?.name}</Text>
         <Text style={styles.body}>{startsAt.toLocaleString()} · {duration} minutes</Text>
         <Text style={styles.body}>Time zone: {Intl.DateTimeFormat().resolvedOptions().timeZone}</Text></View>
-      <AppButton label={saving ? 'Saving…' : 'Confirm and save'} disabled={saving} onPress={() => void save()} />
+      {guide?.listed !== undefined ? <Text style={styles.body}>This time will be sent as an invitation. Editing a sent invitation asks the graduate to accept the new details.</Text> : null}
+      <AppButton label={saving ? 'Saving…' : guide?.listed !== undefined ? 'Confirm and send invitation' : 'Confirm and save'} disabled={saving} onPress={() => void save()} />
       <AppButton variant="secondary" label="Edit details" disabled={saving} onPress={() => { setReview(false); setError(''); }} />
     </> : <>
       <Text style={styles.label}>Contact</Text>

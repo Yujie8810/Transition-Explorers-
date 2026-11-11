@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 const ts = require('typescript');
+const circleBackend = require('./helpers/circleBackend.cjs')();
 
 function load(file, imports = {}) {
   const module = { exports: {} };
@@ -45,7 +46,7 @@ test('Supabase user mapping preserves the server-issued ID and never uses a loca
   assert.equal(account.initialProfile.affiliation, 'Graduate');
 });
 
-// Exercise the remaining local Circle provider with controllable storage across
+// Exercise remote Circle check-ins with a mocked network API across
 // account remounts. Seed legacy keys to catch accidental migration/leakage.
 function mountProvider(file, exportName, disk, accountId, api = {}) {
   const slots = []; const effects = [];
@@ -74,6 +75,10 @@ function mountProvider(file, exportName, disk, accountId, api = {}) {
     '@react-native-async-storage/async-storage': { __esModule: true, default: disk },
     '../../data/sampleData': { sampleAdvice: [], sampleGuides: [{ id: 'taylor' }] },
     './adviceApi': api,
+    './networkApi': Object.fromEntries(['fetchCircleContacts', 'addCircleContact', 'removeCircleContact',
+       'fetchGuidanceRequests', 'saveGuidanceRequest', 'dismissGuidanceRequest', 'fetchIncomingRequests', 'respondToGuidanceRequest',
+       'fetchCheckIns', 'saveRemoteCheckIn', 'cancelRemoteCheckIn', 'fetchIncomingCheckIns', 'respondToCheckIn', 'fetchRequestMessages', 'sendRequestMessage', 'fetchCheckInTimeProposals', 'proposeCheckInTime', 'respondToCheckInTimeProposal']
+      .map(key => [key, circleBackend[key].bind(circleBackend)])),
   });
   const render = () => {
     cursor = 0;
@@ -84,7 +89,7 @@ function mountProvider(file, exportName, disk, accountId, api = {}) {
   return { render, async ready() { render(); await new Promise(setImmediate); return render(); } };
 }
 
-test('local Circle data isolates accounts, restores requests, and leaves legacy device data untouched', async () => {
+test('remote Circle data isolates accounts, restores check-ins, and leaves legacy device data untouched', async () => {
   const disk = storage({
     'transition-explorers.profile.v1': JSON.stringify({ name: 'Legacy user', affiliation: 'Graduate', program: 'Legacy' }),
     'transition-explorers.advice.v1': '["legacy questions"]',
@@ -94,8 +99,12 @@ test('local Circle data isolates accounts, restores requests, and leaves legacy 
   const legacy = [...disk.data.entries()];
   const modules = [
     ['src/features/network/NetworkProvider.tsx', 'NetworkProvider',
-      value => value.saveRequest({ guideId: 'taylor', message: 'Help please', kind: 'advice' }),
-      value => value.requests.length, 1, 0],
+      async value => {
+        await value.addContact('taylor');
+        await value.saveCheckIn({ guideId: 'taylor', topic: 'First week', durationMinutes: 30,
+          startsAt: new Date(Date.now() + 3600000).toISOString() });
+      },
+      value => value.checkIns.length, 1, 0],
   ];
   for (const [file, provider, change, select, expectedA, expectedB] of modules) {
     const accountA = mountProvider(file, provider, disk, 'local-a');
@@ -108,24 +117,21 @@ test('local Circle data isolates accounts, restores requests, and leaves legacy 
   for (const [key, value] of legacy) assert.equal(disk.data.get(key), value);
 });
 
-test('writes finishing after an account switch remain in the original account namespace', async () => {
+test('remote check-in writes finishing after an account switch keep their original owner', async () => {
   const disk = storage();
-  const accountA = mountProvider('src/features/network/NetworkProvider.tsx', 'NetworkProvider', disk, 'local-a');
-  const networkA = await accountA.ready();
-  const originalWrite = disk.setItem.bind(disk);
-  let release;
-  disk.setItem = async (key, value) => {
-    await new Promise(resolve => { release = resolve; });
-    await originalWrite(key, value);
-  };
-  const pending = networkA.saveRequest({ guideId: 'taylor', message: 'Request from account A', kind: 'advice' });
+  const accountA = mountProvider('src/features/network/NetworkProvider.tsx', 'NetworkProvider', disk, 'late-a');
+  await accountA.ready(); await accountA.render().addContact('taylor');
+  let release; circleBackend.delay = new Promise(resolve => { release = resolve; });
+  const pending = accountA.render().saveCheckIn({ guideId: 'taylor', topic: 'Plan from account A', durationMinutes: 30,
+    startsAt: new Date(Date.now() + 3600000).toISOString() });
   await new Promise(setImmediate);
-  const accountB = mountProvider('src/features/network/NetworkProvider.tsx', 'NetworkProvider', disk, 'local-b');
-  assert.equal((await accountB.ready()).requests.length, 0);
-  release(); await pending;
-  assert.equal(accountB.render().requests.length, 0);
-  assert.equal(JSON.parse(disk.data.get('transition-explorers.network.v1.local-a')).requests.length, 1);
-  assert.equal(disk.data.has('transition-explorers.network.v1.local-b'), false);
+  const accountB = mountProvider('src/features/network/NetworkProvider.tsx', 'NetworkProvider', disk, 'late-b');
+  assert.equal((await accountB.ready()).checkIns.length, 0);
+  release(); await pending; circleBackend.delay = null;
+  assert.equal(accountB.render().checkIns.length, 0);
+  assert.equal(circleBackend.checkIns.get('late-a').length, 1);
+  assert.equal(circleBackend.checkIns.has('late-b'), false);
+  assert.equal(disk.data.size, 0);
 });
 
 // This fake models shared remote content for provider tests; it does not verify RLS.

@@ -1,86 +1,96 @@
-# November 3 checkpoint rehearsal
-
-**Current status (November 10):** Supabase integration now includes auth, profiles, questions, answers, and saves of real answers. Seeded demo saves and Circle remain local. Live RLS and cross-device checks are pending; follow [the permissions checklist](database-permissions.md). The rehearsal notes below describe the older checkpoint build; use the current status for new demos.
+# Current handoff and checkpoint rehearsal
 
 Team 4 · Transition Explorers · Career Commons
 
-## Current status — November 10
+## Current status — November 10, 2026
 
-Supabase now provides email/password authentication, profiles, shared public/anonymous questions, question ownership/editing/deletion, real answers with author names, and per-account real saved answers. Fictional questions/answers remain available; demo saves stay local. Circle contacts, guidance requests, and check-ins still use local storage, and requests do not deliver messages.
+**Backend wiring is complete for the implemented app tasks.** The developer
+reports working accounts/profiles, advice/questions/answers/saves, real People
+listings, contacts, private guidance chat, shared scheduled invitations, and
+recipient-proposed times with original-sender accept/reject decisions.
+Screenshots show a real listing, a guidance reply, an invitation and its declined
+state on both accounts. Recipient time proposals are reported working.
 
-Developer-reported mobile-app checks passed for signup/login/logout, profile edits and subsequent login, two-account question visibility and personal lists, question edit/delete, real answer posting and author display, Explore answer counts, and Saved/Remove/Undo. Screenshots show matching database records. Profile RLS was exercised with an authenticated role: own-row update count 1, other-row count 0. These reports do not specify a completed rehearsal on the physical presentation phone.
+The latest code passed **77 mocked tests**, TypeScript and Android/iOS/web Expo
+exports. Earlier advice/contact/request SQL checks and the baseline check-in
+permissions test passed; separate PASS results for the newer directory, delivery
+and proposal scripts have not been recorded. See the [verification record](backend-status.md)
+and [permissions checklist](database-permissions.md). Current setup and the ordered
+fresh-project migrations are in the [README](../README.md). Do not rerun creation
+scripts on the working shared team project.
 
-Pending: deployed anonymous-feed masking; direct cross-account question/answer mutation and private-save RLS checks; cross-device persistence; email confirmation/delivery and revoked sessions; and the full phone/network/accessibility checklist. Client-side masking and mocked tests do not establish deployed server privacy. Public profile reads are intentional.
+Mock graduates/questions/answers remain alongside live data by design. Demo saves
+stay device-local; mock-guide requests/plans are personal records without delivery.
+They do not replace the backend for offline writes. Legacy local records are not
+automatically uploaded. Circle/chat polls every five seconds while open; there
+are no push notifications or calendar integration.
 
-Teammates must run `npm ci`, configure `.env.local` from `.env.example`, and restart Expo. The shared database is already initialized; do not rerun its CREATE TABLE scripts. Fresh-project setup and storage details are in the README. Old local real-answer saves are preserved on disk but must be saved again to create remote records.
-
-The rehearsal material below records the November 3 checkpoint build. Its local-only limitations and original checkboxes are historical, not a description of the current backend. Use this section and the README for current status.
-
-Use `DP4-Checkpoint.pptx` for the 2–3 slide overview. The timeline below is proposed; confirm it with the team before presenting. Update slide status if additional work lands before class.
-
-## Five-minute run of show
+## Suggested five-minute demonstration
 
 | Time | Presenter action |
 | --- | --- |
-| 0:00–0:40 | Slide 1: identify team, users, mobile platform, and technology choices. |
-| 0:40–1:25 | Slide 2: explain simple/moderate/complex tasks and current implementation. Mention fictional data and local-only simulation. |
-| 1:25–1:55 | Slide 3: describe remaining work/timeline and point to GitHub. |
-| 1:55–4:30 | Switch to the live phone app and complete the main demo below. |
-| 4:30–5:00 | Briefly show Profile or Your Circle if time permits; leave room for questions. |
+| 0:00–0:40 | Introduce users, problem, team and mobile platform. |
+| 0:40–1:20 | Explain the three task flows and what uses real Supabase data. Identify the retained fictional examples. |
+| 1:20–2:20 | Explore → filter/search → question → save one answer → Saved → reopen. Use a real answer to demonstrate remote persistence. |
+| 2:20–3:30 | Two signed-in accounts: request guidance from a real listed graduate, open the recipient inbox/chat, reply, and show the sender's reply. |
+| 3:30–4:40 | Send a scheduled invitation. Show Accept/Decline and recipient Reschedule; propose a new time and have the original sender accept or reject. |
+| 4:40–5:00 | Show the shared final state and close within the time limit. |
 
-## Main live task: find and keep advice
+This is a suggested rehearsal, not a record that a full run has passed. Prepare
+two accounts with existing Profile rows, a real listed graduate, and a future
+available slot. Practice the five-second polling delay and use Refresh if needed.
+For the fictional-advice demo, **First job → first week → First week nerves?**
+remains available, but saving its seeded answer demonstrates local demo storage.
 
-1. Open Explore, select **First job**, and search **first week**.
-2. Open **First week nerves?** and read the answers.
-3. Save Anika’s individual answer. Point out **Saved ✓** and its confirmation.
-4. Use **View saved** or the Saved tab. Show the same author and answer.
-5. Open the saved tip to revisit the original question.
-6. Optional: show Remove/Undo in Saved. Clear the search if returning to Explore.
+## Presentation-phone and final QA checklist
 
-Before rehearsing, remove that saved answer if necessary so the live action begins unsaved. Do not clear application data on a teammate’s phone without checking with them.
+Reported app flows work; the team still needs to record the full final rehearsal
+on the actual presentation phone/network. Individual screenshots do not complete
+this checklist.
 
-## Other flows to rehearse
+- [ ] Run the current branch/build on the actual presentation phone.
+- [ ] Rehearse the full task sequence and stay within the presentation time limit.
+- [ ] Check back navigation, scrolling, keyboard/chat composer, safe areas and all
+  four tab highlights; check readable labels, touch targets and accessibility.
+- [ ] Confirm real question/profile/save persistence after restart and across devices;
+  check Remove/Undo and owned-question editing/deletion/follow-up behavior.
+- [ ] Confirm both accounts can exchange chat messages, and failed sends keep the
+  draft while mounted without duplicate delivery on retry.
+- [ ] Confirm scheduled Accept/Decline, sender edit/cancel and recipient proposals
+  appear correctly on both accounts. Rejecting a proposal must preserve the
+  original meeting; accepting must update the time/duration for both people.
+- [ ] Record any outstanding newer SQL permissions results, cross-account answer
+  mutation/signed-out checks, confirmation/email delivery, revoked sessions,
+  offline retries and simultaneous-calendar conflict checks.
+- [ ] Verify classroom network or a tested hotspot/build and prepare screenshots
+  as a fallback reference for the live demo.
+- [ ] Prepare the final presentation, Source/ReadMe/Team PDFs, and narrated/subtitled
+  video; follow the team's assignment requirements and peer-evaluation process.
 
-- Posted questions: Profile → **Your support** → **View your posted questions** → Edit question → save changes → reopen the question. Test **Cancel editing**, **Keep editing**, and **Discard edits**. Then try the red **Delete question** button: cancel with **Keep question**, then confirm deletion and verify it remains deleted after restarting. Use a throwaway demo post; seeded community questions cannot be modified.
-- Profile: view fictional identity → Edit profile → change name/program/affiliation → Save → close/reopen → verify persistence. Also test blank validation and Cancel changes.
-- People: find a graduate → profile → Ask for Guidance → type a request → Review request → Edit request → confirm/save → Your Circle. It must not appear in Your Circle before confirmation.
-- Circle: add a graduate → schedule a future check-in → review/edit → confirm → reschedule → cancel. Verify overlapping appointments and past dates are rejected.
-- Ask: write a question → select topic/visibility → review → edit → publish → open the new question. Show that new questions start with no answers; no real community receives them.
+The earlier checkpoint PPTX is not present in this checkout. Keep final
+presentation artifacts and their status separate from backend implementation.
+No claim is made here that an installable APK or final presentation package exists.
 
-## Physical-phone checklist (team must complete)
+## Proposed team timeline
 
-- [ ] Run the current branch on the actual presentation phone, with its supported Expo Go version or installed native build.
-- [ ] Test the full advice flow, not just the initial screen.
-- [ ] Check back navigation, scrolling, and keyboard behavior. Switch all four bottom tabs and verify each lime highlight centers its icon and label without clipping, including on a phone with a home indicator.
-- [ ] Save multiple answers; restart and confirm all remain saved.
-- [ ] Remove/Undo and reopen saved advice; names/initials match their authors.
-- [ ] Edit Profile and confirm persistence after a full restart.
-- [ ] Under Profile’s **Your support**, open posted questions; edit title/details/topic/visibility and check the updated question in Explore after restarting.
-- [ ] Check blank/short-title validation, cancel/discard behavior, and the empty-list link to Ask.
-- [ ] Confirm both delete buttons are red with readable white text, cancellation keeps the question, and confirmed deletion persists. If deleting an original with follow-ups, verify those remain as independent posts.
-- [ ] Review/edit a guidance request; confirm it appears once in Your Circle.
-- [ ] Confirm classroom connection or arrange a tested hotspot/native build.
-- [ ] Open the slides in PowerPoint and rehearse within five minutes.
+The earlier team plan allocated November 9–12 to usability/accessibility and
+end-to-end testing, and November 13–15 to final presentation/submission packaging.
+It recorded a November 15, 11:59 PM CT deadline; confirm assignment requirements
+with the team. Backend wiring is no longer a remaining feature task.
 
-Browser tests and bundle exports are useful checks, but do not replace this phone checklist. Keep screenshots as a fallback reference; the assignment requires a live demo.
+## Historical notes — superseded builds
 
-## Proposed remaining timeline
+The following entries preserve earlier checkpoint/integration history. Local-only
+limitations, earlier test counts, and deployment-pending statements below describe
+those stages, not the current app. Use the current status above for handoff/demo.
 
-| Dates | Work |
-| --- | --- |
-| Oct 29–Nov 2 | Complete integration, phone testing, visual consistency, and checkpoint rehearsal. |
-| Nov 3 | Progress check: overview + live complete advice task. |
-| Nov 4–8 | Aproteem: login/signup/session/logout; coordinate profile and account-specific storage with Aalvee. Refine remaining task flows and progress tracking. |
-| Nov 9–12 | All owners: internal usability review, DP3 fixes, accessibility, and testing of all three tasks on the target phone. |
-| Nov 13–15 | Assigned owners: Source/ReadMe/Team PDFs, cumulative PPTX, narrated/subtitled video under two minutes, packaging, and individual peer evaluations. Final deadline Nov 15, 11:59 PM CT. |
-
-## November 3 status and limitations (historical)
+### November 3 status and limitations (historical)
 
 The prototype has seven fictional graduates, thirteen seeded questions, and thirty seeded answers. Local edits/additions persist through AsyncStorage. Profile includes a posted-question list with editing and confirmed deletion for this device’s own public/anonymous posts; seeded questions are protected. Guidance requests simulate sending by storing locally, check-ins are personal plans, and no live messaging or backend is connected. Profile uses fictional Alex Morgan and is not a verified account. Authentication remains Aproteem’s work; all storage is currently device-wide rather than per account. History lists check-ins; the richer goals/reflections/progress experience from Figma still needs refinement.
 
 Repository: https://github.com/Yujie8810/Transition-Explorers-
 
-## Automated checks completed October 29
+### Automated checks completed October 29
 
 - TypeScript passed; Metro exports passed for Android, iOS, and web.
 - Mobile-sized Chromium browser: advice search/filter, individual tip save, reload persistence, remove/undo, and reopening the question passed.
@@ -94,7 +104,7 @@ Repository: https://github.com/Yujie8810/Transition-Explorers-
 
 Physical-device checks above remain pending; no claim is made that an APK has been built or that Expo Go was exercised on a phone.
 
-## November 9 Supabase integration update (historical)
+### November 9 Supabase integration update (historical)
 
 Auth now uses Supabase email/password signup/login, session restoration/refresh, and logout. Signup handles projects requiring email confirmation without granting access early. Profile reads/edits use the existing `public."Profiles"` table; a missing row is created after authentication, without overwriting an existing row. Student/Graduate affiliation is self-reported Auth metadata. Configure `.env.local` using `.env.example`, install dependencies, and restart Expo.
 
@@ -102,7 +112,7 @@ Questions, saved tips, Circle contacts, guidance requests, and check-ins still u
 
 Validation for this integration: TypeScript and all 17 automated tests passed; Android, iOS, and web Metro exports passed. Tests mock Supabase and do not establish live project connectivity or deployed RLS behavior.
 
-## November 10 advice backend update
+### November 10 advice backend update
 
 Questions now load through `get_question_feed`, and create/edit/delete operations
 persist in Supabase with ownership policies. The RPC masks anonymous author IDs;
@@ -121,10 +131,85 @@ and local demo data. These mocks do not verify server permissions.
 
 Validation on November 10: `npm test` passed all 33 tests; `npm run typecheck`
 passed. The new [rollback-only permissions SQL](../supabase/tests/advice_permissions.sql)
-has not been executed against the team's Supabase project. Live anonymous output,
-ownership/private saves, cross-device persistence, email delivery, and physical-phone
-checks remain pending. See [the step-by-step checklist](database-permissions.md).
+returned PASS in the developer-provided Supabase SQL Editor screenshot: anonymous
+feed masking, question ownership, and private saves passed, with fixtures rolled back.
+B’s actual app/Network anonymous response also passed, supported by the developer’s
+screenshot. Cross-device persistence is developer-reported passed, with matching
+profile screenshots; save synchronization relies on the report rather than matching
+Saved counts in those screenshots. Email delivery and the full physical-phone
+checklist remain pending. See [the step-by-step checklist](database-permissions.md).
 Android, iOS, and web Metro exports also passed for this handoff. These exports do not establish an installed native build or physical-phone readiness.
 
 Next backend work after permission verification: Circle contacts, guidance requests,
 and check-ins, which still use account-specific AsyncStorage.
+
+
+### Circle contacts implementation — November 10
+
+Added a commented `circle_contacts` table with private SELECT/INSERT/DELETE RLS,
+an API for loading/adding/removing contacts, and a provider that combines remote
+contact membership with local requests/check-ins. Contact IDs still reference the
+seven fictional People guides. Legacy contact IDs stay on disk without automatic
+upload. Guidance-request confirmation adds a remote contact before saving the
+local request; a local failure leaves that contact added and supports request retry.
+Check-in guards still cover only this device's plans.
+
+`npm test` passed all 38 tests and TypeScript passed for this change. A developer-provided
+November 10 Supabase SQL Editor screenshot shows the Circle permissions script
+returned PASS for private contact access, own-contact operations, forged-owner insert
+denial, cross-account delete denial, and signed-out read denial; fixtures rolled back.
+The developer subsequently reports app add/remove, same-account cross-device
+restoration/removal after reload, and other-account isolation passed. Screenshots
+show the saved-contact button and contact counts of 1 and 0; they do not independently
+establish the whole sequence. Follow
+[the commented walkthrough](circle-contacts.md); do not rerun table creation on
+the initialized team project.
+Guidance requests and check-ins are the next backend steps after contacts pass.
+
+
+### Guidance requests implementation — November 10
+
+Added commented `guidance_requests.sql` with owner-only SELECT/INSERT/DELETE RLS
+and a SECURITY INVOKER RPC that saves a request and its contact atomically.
+Requests have generated IDs/dates and validated guide/type/message fields. An
+owner-scoped retry token prevents duplicate creation when an unchanged failed
+draft is retried within the mounted provider. Dismissal preserves the contact.
+The earlier Circle two-store save behavior above is superseded by this RPC.
+
+The provider now loads contacts/requests remotely and check-ins locally, preserves
+legacy local requests without auto-upload/display, and ignores late account
+results. Request review supports a 2000-character maximum. Tests cover fresh-device
+request restoration/dismissal, account separation, failed writes, uncertain-response
+retry, validation, preserved legacy data, and logout during a request.
+
+Validation: all 43 mocked tests and TypeScript passed. A November 10 developer-
+provided SQL Editor screenshot confirms the guidance permissions script returned
+PASS for private requests, contact creation, retry behavior, and signed-out denial;
+fixtures rolled back. App checks are developer-reported passed. Screenshots show
+request review and the saved request/contact in Circle; cross-device dismissal and
+account isolation rely on the report rather than independent screenshot evidence. Follow
+[the request walkthrough](guidance-requests.md) and run its rollback-only permissions
+script with A/B UUIDs. Check-ins remain the next backend feature.
+
+
+### Check-ins implementation — November 10
+
+Added commented `check_ins.sql`, an API for loading/saving/cancelling, and remote
+provider integration for scheduling, rescheduling, cancellation, and date-derived
+history. The database migration defines owner-only RLS, an invoker save RPC,
+owner-scoped retry tokens, and a GiST exclusion constraint for per-account overlaps.
+Validation computes end times, checks finite future starts and current contact
+membership, and prevents reassignment. Narrow definer triggers coordinate contact
+removal and scheduling using the contact row, reject removal with upcoming/ongoing
+plans, and preserve past history. Earlier device-only removal guards are superseded.
+
+All Circle data now loads remotely. Legacy local keys remain untouched, without
+automatic upload or display as remote records. Recreate older plans to save them
+remotely. Only fictional demo answer saves still actively use local feature storage.
+
+Validation: all 48 mocked tests, TypeScript, and whitespace checks passed. The new
+migration/permissions SQL has not been executed against the team project. Live
+RLS/constraints/triggers, concurrent saves/removal, cross-device flows, and physical-
+phone checks remain pending. Follow [the commented check-in walkthrough](check-ins.md).
+Earlier Circle/guidance SQL tests were made compatible with the new contact guard
+by temporarily clearing only their test-guide plans, with full rollback restoration.

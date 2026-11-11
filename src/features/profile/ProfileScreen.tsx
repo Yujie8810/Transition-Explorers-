@@ -1,3 +1,4 @@
+import { PeopleProfileEditor } from '../people/PeopleProfileEditor';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
@@ -53,6 +54,7 @@ export default function ProfileScreen() {
     </View>
     {notice ? <Text style={styles.notice} accessibilityLiveRegion="polite" role="status">{notice}</Text> : null}
     <AppButton label="Edit profile" onPress={() => { setNotice(''); setEditing(true); }} />
+    <PeopleProfileEditor />
     <Text style={styles.heading}>Your support</Text>
     <AppButton variant="secondary" label="View your posted questions" onPress={() => router.push('/my-questions')} />
     <AppButton variant="secondary" label={`Saved advice (${saved.length})`} onPress={() => router.dismissTo('/saved')} />

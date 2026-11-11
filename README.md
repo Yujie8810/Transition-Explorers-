@@ -6,51 +6,76 @@ Team: Aalvee Ahtav, Aproteem Majumder, Hoa Doan, Mourede Otchere, Yujie Duan.
 
 ## Current implementation
 
-- **Accounts:** Supabase email/password signup/login, session restoration/refresh, confirmation feedback, and logout. Main screens require a session.
-- **Profile:** name/program read and save to the case-sensitive `public."Profiles"` table. Student/Graduate affiliation is self-reported Auth metadata, not verified membership.
-- **Explore and Ask:** shared Supabase questions, topic/search filters, review/publish, author names for public posts, anonymous labels, and ownership-specific Profile lists with editing/deletion. Deleting an original leaves its follow-ups independent.
-- **Answers:** Supabase answer posting and shared answer counts, text, and author profiles. Real answer authors display a byline; their People profile/request routes are not implemented yet.
-- **Saved:** real answer saves use Supabase, with per-account loading, retry, duplicate prevention, Remove, and Undo. Fictional demo answer saves stay in account-specific AsyncStorage.
-- **People and Circle:** seven fictional graduates, reviewed guidance requests, contacts, and check-in scheduling/rescheduling/cancellation/history. Contacts, requests, and check-ins are local personal records; there is no request delivery, messaging, or cross-device Circle synchronization.
+**Backend wiring is complete for the currently implemented app flows.** The developer reports that the integrations work on the shared Supabase project, including guidance chat, scheduled invitations, and recipient-proposed new times. The latest local validation passed TypeScript, all **77 mocked tests**, and Android/iOS/web Expo exports. See the [verification record](docs/backend-status.md) for the distinction between app checks, SQL permissions results, and final QA.
 
-The app retains **13 fictional questions and 30 fictional answers** alongside live database content. Fictional IDs are not UUIDs, so posting answers or follow-ups is supported only on database questions. New questions initially have no answers.
+- **Accounts and Profile:** Supabase email/password signup/login, session restoration/refresh, confirmation feedback, logout, and saved name/program. Student/Graduate affiliation is self-reported Auth metadata.
+- **Explore and Ask:** shared public/anonymous questions, search/topic filters, review/publish, author labels, owned-question lists, editing/deletion, and independent follow-ups.
+- **Answers and Saved:** real answer posting, author bylines, shared counts, and account-private saved answers with Remove/Undo. Saves of fictional answers stay on the device.
+- **People:** opt-in real graduate profiles with role, expertise, and bio, alongside seven fictional graduates. Use **Profile → Edit profile → Graduate**, then **Your People profile → Edit People profile → Appear in People → Save**. Your own listing offers editing instead of self-contact/request actions.
+- **Circle and guidance chat:** remote contacts, reviewed requests, a recipient inbox, and private two-way guidance conversations with message bubbles and a composer. Hiding a delivered request preserves the recipient's conversation; a new guidance reply restores it for the sender.
+- **Scheduled check-ins:** invitations show the date/time, duration, topic, and Accept/Decline controls. Both users see decisions and cancellation. Sender edits ask the recipient to accept the changed invitation.
+- **Recipient rescheduling:** **Reschedule and propose a new time** appears below Decline. The original sender can accept or reject the proposal. Acceptance confirms the new time for both users; rejection keeps the original meeting unchanged. Calendar conflicts and stale proposals are checked on the server.
 
-**Verification status:** the developer reported successful mobile-app tests of signup/login/logout, profile edits and later login, two-account public/anonymous question sharing, ownership-specific lists, question edits/deletion, answer posting/author display/counts, and remote Saved behavior. Profile RLS testing confirmed an owner update returns one row and a different user's update returns zero. These checks do not establish deployed question/answer/save RLS or anonymous feed masking; those remain pending, along with cross-device persistence and a full rehearsal on the presentation phone. See [checkpoint](docs/checkpoint.md).
+## Mock data and current limits
+
+The app intentionally retains **7 fictional graduates, 13 fictional questions, and 30 fictional answers** alongside live content. Demo People entries remain visible if community-profile loading fails, with a retry message. Mock content is not an automatic offline replacement for backend writes or all task flows.
+
+Fictional-guide requests and check-ins remain personal demo records without delivery. Fictional-answer saves use account-specific AsyncStorage and do not sync across devices. Answer posting and follow-ups require real database questions because fictional IDs are not UUIDs. Existing local records are preserved without automatic upload; recreate/save them through the app to store them remotely. Older private real-user requests/plans are not retroactively delivered.
+
+Circle and chats refresh on focus, foreground return, and every five seconds while open; People refreshes on focus/manual refresh. There are no Supabase Realtime subscriptions, push notifications, calendar integration, or durable offline message outbox. Failed chat sends retain the draft while that screen remains mounted. Questions/answers/saves use their own loading/refresh actions. Real answer bylines do not yet link directly into People; use the People directory to find a listed graduate.
+
+Listing in People and Graduate affiliation are self-reported, not verified membership. Existing profile columns are readable by signed-in users; the listing switch controls discovery, not profile privacy. Email-link session handling, password recovery, and richer goals/reflections are outside the implemented flows.
 
 ## Supabase authentication setup
 
-**Owners:** Aproteem maintains the auth frontend; Yujie Duan (Yuji) handles backend integration. Coordinate profile work with Aalvee and advice/Saved changes with Mourede and Hoa.
+**Existing team project:** the backend integrations are deployed and developer-reported working. Teammates should configure the app and use that project; **do not rerun its CREATE TABLE migrations**. The ordered scripts below are for a fresh project or a deliberately identified missing migration.
 
-1. Run `npm ci` to install the recorded dependencies.
-2. Copy `.env.example` to `.env.local` and fill in `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` from the team's project. Use a publishable key (`sb_publishable_...`). Never put secret/admin keys in the app. `.env.local` is ignored; `.env.example` contains placeholders suitable for Git.
-3. Use the existing team Supabase project, where the tables have already been created. For a **fresh project only**, execute [supabase/profiles.sql](supabase/profiles.sql) first, then [supabase/migrations/advice.sql](supabase/migrations/advice.sql) in the Supabase SQL Editor. These are manual setup scripts, not idempotent migrations: rerunning them on an initialized database will fail. Saving a SQL file locally does not execute it. These instructions do not use `supabase db push`.
-4. Keep RLS enabled. Profiles are readable by signed-in users, with owner-only insertion/update. Questions/answers have owner-only mutations; saves are private to their user. The feed function returns community questions while masking anonymous author IDs. The client looks up names only for public questions. Verify these deployed permissions using ordinary authenticated roles, not the dashboard's admin role.
-5. Enable email/password signup. If confirmation is enabled, configure email delivery and a working Site URL; confirm the email link, then return to password login. Email-link session handling and password recovery are not implemented. Confirmation/email-delivery behavior still needs live verification for the team's configuration.
-6. Restart Expo with `npx expo start --clear`, sign up with an email you control, and test the full flow. Restart after environment or integration changes if the phone is running stale code.
+1. Run `npm ci`.
+2. Copy `.env.example` to `.env.local` and set `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` from the shared project. Use a publishable app key; never include secret/admin keys. `.env.local` is ignored by Git.
+3. For a **fresh project only**, run each entire SQL file once in Supabase SQL Editor, in this order:
 
-All profile columns are readable by signed-in users under the current policy. Keep private account data out of `Profiles` unless access rules change. The existing project uses `Profiles` with a capital P; do not rename it independently.
+| Order | SQL file | Adds |
+| --- | --- | --- |
+| 1 | [profiles.sql](supabase/profiles.sql) | Case-sensitive `public."Profiles"` and owner writes |
+| 2 | [advice.sql](supabase/migrations/advice.sql) | Questions, feed RPC, answers, and saves |
+| 3 | [circle_contacts.sql](supabase/migrations/circle_contacts.sql) | Private contact membership |
+| 4 | [guidance_requests.sql](supabase/migrations/guidance_requests.sql) | Atomic request/contact saves |
+| 5 | [check_ins.sql](supabase/migrations/check_ins.sql) | Personal schedules, overlap/contact guards |
+| 6 | [people_directory.sql](supabase/migrations/people_directory.sql) | Opt-in real People listings and real guide IDs |
+| 7 | [request_delivery.sql](supabase/migrations/request_delivery.sql) | Private chat, inbox, shared invitations, calendar bookings |
+| 8 | [check_in_time_proposals.sql](supabase/migrations/check_in_time_proposals.sql) | Recipient proposals and sender decisions |
 
-### Implementation and data ownership
+These are manual, ordered, one-time scripts, not idempotent setup. Saving a file does not execute it. This workflow does not use `supabase db push`.
+
+4. Keep RLS enabled. Profiles are readable by signed-in users with owner-only profile writes; saves/contacts are private; delivered requests, messages, invitations, and proposals are readable by their participants. Guarded RPCs enforce who may send, decide, edit, or cancel. Run the [permissions checks](docs/database-permissions.md) as ordinary authenticated roles rather than relying on dashboard admin reads.
+5. Enable email/password authentication. If confirmation is enabled, configure delivery/Site URL, confirm the account, then return to password login. Live confirmation/delivery behavior for the team's configuration still needs a recorded result.
+6. Restart Expo with `npx expo start --clear`, sign in, and open Profile so the account has a profile row. Restart after environment changes or if a phone is running stale code.
+
+### Data ownership and shared providers
 
 | Data | Source of truth |
 | --- | --- |
-| Credentials and sessions | Supabase Auth; native session persistence uses AsyncStorage, web uses browser storage |
-| Name and program | `Profiles.full_name` and `Profiles.major` |
-| Self-reported affiliation | Auth `user_metadata.affiliation` |
-| Shared questions | `questions`, read through `get_question_feed()` |
-| Real answers and author bylines | `answers` joined to `Profiles` |
-| Real saved answers | `saved_answers`, keyed by `(user_id, answer_id)` |
-| Fictional demo saves | `transition-explorers.saved-advice.v1.<accountId>` in AsyncStorage |
-| Circle contacts/requests/check-ins | `transition-explorers.network.v1.<accountId>` in AsyncStorage |
+| Credentials and sessions | Supabase Auth; device/browser storage persists the session |
+| Name/program, role, bio, expertise, People listing | `Profiles` |
+| Self-reported Student/Graduate affiliation | Auth `user_metadata.affiliation` |
+| Questions and anonymous feed | `questions`, read through `get_question_feed()` |
+| Answers and author bylines | `answers` joined to `Profiles` |
+| Real saved answers | `saved_answers`, private to the saving account |
+| Fictional-answer saves | Account-specific AsyncStorage |
+| Contacts | `circle_contacts`, private `(user_id, guide_id)` membership |
+| Requests and chat | `guidance_requests`, `guidance_messages` |
+| Schedules and accepted calendar reservations | `check_ins`, private `check_in_bookings` |
+| Recipient-proposed new times | `check_in_time_proposals` |
 
-- `AuthProvider` manages restoration, session events, and native foreground refresh. `accountStore.ts` contains validation/user mapping; it no longer stores demo credentials. Logout ends this device's session, leaving other devices signed in.
-- `ProfileProvider` reads the user's row and inserts defaults only if it is missing. An existing signup trigger can coexist with this behavior. Profile database writes and Auth metadata updates are separate operations; retry a failed save to reconcile partial completion.
-- `AdviceProvider` fetches shared questions; `isMine` controls the personal list and UI actions. UI ownership checks supplement database RLS. `AnswersProvider` shares real and fictional answers across counts/details/Saved.
-- `SavedAdviceProvider` loads remote saves and local demo saves. It blocks overlapping mutations and changes visible state after persistence succeeds. It does not silently upload earlier local real-answer saves: those remain on disk, and users should save them again to create remote records.
-- Root remounts personal providers on account ID changes to discard old forms and in-memory data. Old device-wide keys and `local-...` demo identities remain untouched, without automatic migration based on email.
-- Questions load on login and after mutations; answers have a Refresh action. There are no realtime subscriptions or automatic live updates from other devices. Answer loading currently fetches all available answers; pagination remains future work.
+The root remounts personal providers on account changes to discard stale forms and results. `AuthProvider` owns session restoration/refresh. `ProfileProvider` owns profile edits; `PeopleProvider` loads directory profiles and saves opt-in listings. `AdviceProvider`, `AnswersProvider`, and `SavedAdviceProvider` share advice state. `NetworkProvider` loads Circle/inbox/chat/invitations/proposals, serializes mutations and refreshes, and ignores late account results. The API/SQL preserve the account that initiated a write.
 
-### Validation and handoff checklist
+Requests, messages, and proposals reuse in-memory retry tokens after an uncertain response. Reloading loses those tokens; inspect Circle/chat before manually resending. Profile database writes and Auth metadata updates are separate operations; retry a failed profile save to reconcile partial completion. Legacy device-wide/local account data remains untouched.
+
+### Validation and handoff
+
+Teammates testing the shared backend should start with the
+[step-by-step database testing guide](docs/teammate-database-testing.md), covering
+app setup, two accounts, SQL scripts, expected results and troubleshooting.
 
 ```sh
 npm run typecheck
@@ -58,15 +83,11 @@ npm test
 npm run web
 ```
 
-Automated tests mock the backend. They cover Ask validation, Auth/profile behavior, shared-question mapping/mutations/retries, author labels and client-side anonymous masking, remote saves and local demo saves, failed writes, account boundaries, and late responses. They do not prove server authorization or live email delivery.
+The latest implementation checks passed **77 mocked tests**, TypeScript, whitespace validation, and Android/iOS/web exports. These checks cover shared data, account isolation, failures/retries, chat, invitation decisions, and proposal acceptance/rejection; they do not establish deployed authorization or a final phone rehearsal.
 
-Still verify before the final demo, using the [permissions and cross-device checklist](docs/database-permissions.md):
+Developer reports and screenshots establish live backend task behavior. Earlier advice/contact/request SQL checks and the baseline check-in permissions test passed; separate PASS results for the newer directory/delivery/proposal scripts have not been recorded. Run any outstanding [permissions checks](docs/database-permissions.md), then complete the [final rehearsal checklist](docs/checkpoint.md). Those are verification tasks, not remaining backend wiring.
 
-- Anonymous feed entries return `author_id: null` and `author_name: null` to another signed-in user. A client's masking alone is not proof that the server withheld the ID.
-- Direct requests cannot edit/delete another user's questions or answers, or read/create/delete another user's saves. Signed-out access is denied. Authenticated profile/community reads are intentionally allowed.
-- Same-account login on another device restores the profile, owned questions, and real saves; Circle and demo saves stay local.
-- Confirmation, invalid credentials, expired/revoked sessions, offline retries, protected deep links, and back navigation behave correctly.
-- Complete the physical-phone navigation, keyboard, accessibility, presentation-network, and rehearsal checks in [checkpoint](docs/checkpoint.md).
+Feature guides: [contacts](docs/circle-contacts.md), [People](docs/people-directory.md), [requests](docs/guidance-requests.md), [chat/invitations](docs/request-delivery.md), [check-ins](docs/check-ins.md), and [new-time proposals](docs/check-in-time-proposals.md).
 
 ## First-time setup for each teammate
 
@@ -225,16 +246,16 @@ Run these commands to check TypeScript and the automated tests before sharing ch
 
 ## Where each teammate works
 
-| Owner | Main files | Work to implement |
+| Owner | Main files | Area |
 | --- | --- | --- |
 | Aproteem | `src/features/auth/`, `src/features/explore/` | Login/signup/logout, home layout; coordinate shared navigation changes |
 | Mourede | `src/features/advice/`, `src/features/ask/` | Search, discussions/answers, question posting, saving advice |
-| Yujie Duan (Yuji) | `src/features/people/`, auth backend integration through `src/features/auth/` | People search/filtering, graduate profiles, editable guidance requests; connect Aproteem's login/signup/session frontend to the backend |
-| Hoa | `src/features/network/` | Connections, mentor details, check-in scheduling and progress |
+| Yujie Duan (Yuji) | `src/features/people/`, auth backend integration through `src/features/auth/` | People/directory, graduate profiles, guidance requests, and backend integration with Aproteem |
+| Hoa | `src/features/network/` | Connections, guidance chat, check-in invitations and rescheduling |
 | Aalvee | `src/features/profile/`, `src/components/`, `src/theme.ts` | User profile, posted-question management, shared components, testing support |
 | Agree together | `src/features/saved/` | Saved advice shared by the advice and network flows |
 
-Yujie owns Ask for Help and is implementing backend authentication with Aproteem; follow the [Supabase authentication setup](#supabase-authentication-setup) before changing auth contracts, routing, or account IDs. Mourede and Hoa should coordinate edits to the shared Saved flow. Existing feature implementations should be extended in their owners’ modules.
+Yujie owns Ask for Help and coordinates backend integration with Aproteem; follow the [Supabase authentication setup](#supabase-authentication-setup) before changing auth contracts, routing, or account IDs. Mourede and Hoa should coordinate edits to the shared Saved flow. Existing feature implementations should be extended in their owners’ modules.
 
 ### Folder map
 
@@ -244,7 +265,7 @@ src/
     (tabs)/            Four bottom tabs
     advice/[id].tsx    Selected discussion route
     people/            Graduate profile and request routes
-    network/           Circle and check-in routes
+    network/           Circle, guidance chat, check-ins and proposal routes
     my-questions/      Posted-question list and edit routes
   features/            Actual screens, grouped by module
   components/          Shared Screen, AppButton, FeaturePlaceholder
@@ -258,13 +279,13 @@ Search for `need to implment` in `src/` to find comments describing unfinished w
 
 Routes re-export feature screens to keep team edits separate. Implement the UI inside your feature folder, replacing `FeaturePlaceholder` as you go. Add more routes/screens for review, confirmation, mentor details, or progress when your flow needs them.
 
-Use `useLocalSearchParams` from `expo-router` to read an `[id]` route parameter and look up the selected record. Advice and graduate profiles already use this pattern with IDs from `sampleData.ts`.
+Use `useLocalSearchParams` from `expo-router` to read an `[id]` route parameter and look up the selected record. Advice and graduate profiles use this pattern with database IDs and fictional IDs from `sampleData.ts`.
 
 ## Shared development rules
 
 - Reuse `Screen`, `AppButton`, and `theme`; coordinate edits to these shared files.
 - Keep route files small. Put feature-specific components and logic inside the feature folder.
-- Reuse `AdviceProvider`, `AnswersProvider`, `SavedAdviceProvider`, `NetworkProvider`, and `ProfileProvider` for shared data. Questions, real answers/saves, and Profile use Supabase; Circle and demo saves use account-specific AsyncStorage. `AnswersProvider` inherits its account boundary from the root; the other providers accept `accountId`. The root mounts these providers only for a signed-in account and remounts them when the account changes; preserve that boundary to prevent stale data or drafts appearing for another account. `AdviceProvider` exposes `postedQuestions`, `postQuestion`, `updateQuestion`, and `deleteQuestion`; use these shared operations so Explore and Profile stay in sync. Question mutations wait for loading and persist through the API; saves block overlapping changes. Coordinate session or storage changes with Aproteem.
+- Reuse `AdviceProvider`, `AnswersProvider`, `SavedAdviceProvider`, `NetworkProvider`, `PeopleProvider`, and `ProfileProvider` for shared data. Questions, real answers/saves, Profile, directory listings and all Circle features use Supabase; fresh projects need the full ordered migration chain above. Only demo saves still use account-specific AsyncStorage. `AnswersProvider` inherits its account boundary from the root; the other providers accept `accountId`. The root mounts these providers only for a signed-in account and remounts them when the account changes; preserve that boundary to prevent stale data or drafts appearing for another account. `AdviceProvider` exposes `postedQuestions`, `postQuestion`, `updateQuestion`, and `deleteQuestion`; use these shared operations so Explore and Profile stay in sync. Question mutations wait for loading and persist through the API; saves block overlapping changes. Coordinate session or storage changes with Aproteem.
 - Import seed data rather than duplicating the same people/posts in multiple modules. Expand the data enough to support realistic tasks.
 - Stack screens receive a back button when pushed from another screen. Test returning without losing drafts.
 - Keep implementation status accurate in developer documentation and use normal product copy in the app. Do not store real passwords in seed data or the local account registry.
@@ -324,7 +345,7 @@ After your pull request is merged, switch to `main`, pull the latest code, and c
 
 The checkpoint needs 2–3 slides and a live demo within **5 minutes**. At least one of the three tasks must work end to end on the chosen mobile platform.
 
-- Presentation: [DP4-Checkpoint.pptx](docs/DP4-Checkpoint.pptx).
+- The earlier checkpoint slide deck is not present in this checkout. Prepare the final presentation separately.
 - Rehearsal, phone checks, and proposed timeline: [checkpoint guide](docs/checkpoint.md).
 - Main demo: **Explore → filter/search → open a question → save one answer → Saved → reopen the question**.
 - Before class: test on the presentation phone, verify persistence after restarting, and confirm the live connection. Browser testing and successful bundling do not establish physical-device readiness.
@@ -341,6 +362,4 @@ The final Source, ReadMe, and Team PDFs, final presentation, and narrated/subtit
 
 ## Verification
 
-November 10 integration checks passed: TypeScript, all 33 automated tests, whitespace checks, and Android/iOS/web Metro exports. The suite mocks Supabase; developer-reported live checks and still-pending server permission/physical-phone checks are distinguished above and in [checkpoint](docs/checkpoint.md).
-
-Earlier October 29 and November 9 bundle/browser checks apply to earlier builds. An export is not an installed native build, a live database test, or a completed presentation-phone rehearsal.
+Latest implementation validation: **77 automated tests**, TypeScript, whitespace checks, and Android/iOS/web Expo exports passed. Backend flows, including chat and recipient rescheduling, are developer-reported working on the shared project. See the [verification record](docs/backend-status.md) for recorded SQL results and remaining final QA. Exports do not establish an installed native build or completed presentation rehearsal.

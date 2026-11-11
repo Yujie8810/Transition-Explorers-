@@ -1,20 +1,25 @@
+import { useAuth } from '../auth/AuthProvider';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
 import { Screen } from '../../components/Screen';
 import { AppButton } from '../../components/AppButton';
-import { sampleGuides } from '../../data/sampleData';
+import { usePeople } from '../people/PeopleProvider';
 import { theme } from '../../theme';
 import { useNetwork } from '../network/NetworkProvider';
 
 export default function GuideProfileScreen() {
+  const { guides, loadError: peopleError, reload: reloadPeople, ready: peopleReady } = usePeople();
   const network = useNetwork();
+  const { account } = useAuth();
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const { id } = useLocalSearchParams<{ id?: string | string[] }>();
   const graduateId = Array.isArray(id) ? id[0] : id;
-  const graduate = sampleGuides.find((guide) => guide.id === graduateId);
+  const graduate = guides.find((guide) => guide.id === graduateId);
+
+  if (!graduate && !peopleReady) return <Screen title="Community profile"><Text>{peopleError || 'Loading profile…'}</Text>{peopleError ? <AppButton label="Retry" onPress={reloadPeople} /> : null}</Screen>;
 
   if (!graduate) {
     return (
@@ -36,12 +41,11 @@ export default function GuideProfileScreen() {
       <View style={styles.aboutSection}>
         <Text style={styles.sectionTitle}>About</Text>
         <Text style={styles.aboutText}>
-          {graduate.name} is a graduate who shares practical advice on
-          starting a career, building confidence at work, and navigating
-          common first-job questions.
+          {graduate.bio || `${graduate.name} shares practical advice on starting a career and navigating workplace questions.`}
         </Text>
       </View>
 
+      {graduate.id === account?.id ? <AppButton label="Edit your profile" onPress={() => router.push('/profile')} /> : <>
       {error ? <Text style={styles.emptyMessage}>{error}</Text> : null}
       {network.loadError ? <><Text style={styles.emptyMessage}>{network.loadError}</Text><AppButton label="Retry loading" onPress={network.reload} /></> : null}
       <AppButton
@@ -63,6 +67,7 @@ export default function GuideProfileScreen() {
           })
         }
       />
+      </>}
     </Screen>
   );
 }

@@ -1,8 +1,34 @@
-# Verify advice database permissions
+# Verify database permissions
 
-Run these checks before integrating Circle contacts, guidance requests, or check-ins.
-The repository's SQL and mocked tests describe intended behavior; they do not prove
-that your Supabase project has those policies deployed.
+For a first test run, start with the [teammate database testing guide](teammate-database-testing.md).
+It covers app setup, account UUIDs, the exact scripts to run and how to record results.
+
+Backend wiring is complete and developer-reported working on the shared project.
+This is a verification checklist, not a list of unfinished integrations. See the
+[evidence record](backend-status.md) for reported app/SQL results. Successful UI
+flows and mocked tests do not prove every deployed authorization rule.
+
+## Current SQL check selection
+
+Use two existing Auth/Profile accounts and run each selected script as a whole,
+including its final rollback. The scripts simulate ordinary authenticated roles;
+admin dashboard reads alone do not test RLS. Do not rerun creation migrations.
+
+| Script | Current use / recorded result |
+| --- | --- |
+| [advice_permissions.sql](../supabase/tests/advice_permissions.sql) | Ownership, anonymity and private saves; recorded PASS |
+| [circle_contacts_permissions.sql](../supabase/tests/circle_contacts_permissions.sql) | Private contact operations; recorded PASS |
+| [guidance_requests_permissions.sql](../supabase/tests/guidance_requests_permissions.sql) | Initial demo/private request storage; recorded PASS, not a complete test of delivered chat |
+| [people_directory_permissions.sql](../supabase/tests/people_directory_permissions.sql) | Profile opt-in, ownership and real guide IDs; separate PASS not recorded |
+| [request_delivery_permissions.sql](../supabase/tests/request_delivery_permissions.sql) | Participant chat/privacy, invitation decisions and bookings; separate PASS not recorded |
+| [check_in_time_proposals_permissions.sql](../supabase/tests/check_in_time_proposals_permissions.sql) | Recipient proposals, sender decisions, shared updates and stale/conflict protection; separate PASS not recorded |
+
+The baseline `check_ins_permissions.sql` passed by developer report before shared
+invitations were added. Its direct INSERT/UPDATE assumptions are superseded by the
+delivery migration; use the two current delivery/proposal scripts for current
+check-in permissions. Earlier PASS results do not certify later policies.
+
+The remaining sections retain the detailed advice-specific procedure.
 
 ## 1. Prepare two accounts
 
@@ -30,7 +56,7 @@ This follows Supabase's documented
 Expected result: a `PASS` result row and no SQL errors. The final `rollback`
 removes every fixture and mutation; do not replace it with `commit`. If a query
 fails and the editor leaves an aborted transaction open, run `rollback;` before
-trying again. Record the error and resolve it before adding more backend features.
+trying again. Record and resolve any error before considering that permission check passed.
 
 The checks cover:
 
@@ -88,22 +114,22 @@ test does not replace the live SQL or Network check.
    content, with anonymous identity hidden.
 5. Delete your throwaway question as A when finished.
 
-Saves of fictional seeded answers intentionally remain local and will not appear
-on device 2. Circle contacts, guidance requests, and check-ins also remain local,
-separated by account ID. Do not use those as the cross-device success criteria.
+Saves of fictional seeded answers intentionally stay device-local. All real Circle
+features now use Supabase: contacts, private chat/inbox, scheduled invitations and
+recipient time proposals are developer-reported working. Circle/chat updates every
+five seconds while open, as well as on focus/foreground/manual refresh. Advice,
+profile and saved-data persistence should still be checked through their own
+reload/refresh paths rather than assuming Circle polling refreshes everything.
 
 ## Record results
 
-All live checks below are **pending** until someone runs them on the team's project.
-Add the tester, date, platform, and observed result when completed. Do not attach
-passwords, access tokens, or private keys.
+Record tester, date, platform, script/version and observed result. Never attach
+passwords, access tokens or private keys. Keep fixtures rollback-only.
 
-| Verification | Status |
-| --- | --- |
-| SQL ownership, anonymity, and saves assertions | Pending |
-| B's actual app/Network anonymous response | Pending |
-| A's profile/questions/real saves on a second device | Pending |
-| Physical-phone flow | Pending |
-
-After these pass, integrate Circle contacts, then guidance requests, then check-ins
-with their own ownership policies and live two-account checks.
+The [central verification record](backend-status.md) contains current results:
+prior advice/contact/request SQL evidence, the reported baseline check-in PASS,
+screenshot-backed live chat/declines, and the reported working proposal flow.
+Separate PASS results for directory/delivery/proposal checks have not been
+reported. Cross-account answer mutations, broader signed-out access, live
+concurrency, confirmation/session edge cases and the final physical-phone rehearsal
+remain QA items unless the team records their completion.
