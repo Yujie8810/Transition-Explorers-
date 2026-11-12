@@ -47,7 +47,7 @@ function CheckInForm({ existing, initialGuideId }: { existing?: CheckIn; initial
   const [error, setError] = useState('');
   const [review, setReview] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [saved, setSaved] = useState<CheckIn | null>(null);
   const guide = contacts.find((contact) => contact.id === guideId);
   const days = Array.from({ length: 7 }, (_, index) => {
     const day = new Date(); day.setDate(day.getDate() + index); return day;
@@ -66,15 +66,18 @@ function CheckInForm({ existing, initialGuideId }: { existing?: CheckIn; initial
     if (problem) { setError(problem); setReview(false); return; }
     setSaving(true); setError('');
     try {
-      await network.saveCheckIn({ guideId, topic, durationMinutes: duration, startsAt: startsAt.toISOString() }, existing?.id);
-      setSaved(true);
+      const result = await network.saveCheckIn({ guideId, topic, durationMinutes: duration, startsAt: startsAt.toISOString() }, existing?.id);
+      setSaved(result);
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not save. Please try again.'); }
     finally { setSaving(false); }
   };
-  if (saved) return <Screen title={guide?.listed !== undefined ? 'Invitation sent' : 'Check-in saved'}
-    subtitle={guide?.listed !== undefined ? 'The graduate can accept or decline. Their decision will appear in Your Circle.' : 'Find your personal plan in Your Circle.'}>
-    <View style={styles.card}><Text style={styles.title}>{topic.trim()}</Text><Text style={styles.body}>{guide?.name}</Text>
-      <Text style={styles.body}>{startsAt.toLocaleString()} · {duration} minutes</Text></View>
+  if (saved) return <Screen title={saved.delivered && saved.status === 'pending' ? 'Invitation sent' : 'Check-in saved'}
+    subtitle={saved.delivered ? saved.status === 'pending'
+      ? 'The graduate can accept or decline. Their decision will appear in Your Circle.'
+      : `Invitation status: ${saved.status}. Find your check-in in Your Circle.`
+      : 'Find your personal plan in Your Circle.'}>
+    <View style={styles.card}><Text style={styles.title}>{saved.topic}</Text><Text style={styles.body}>{guides.find(contact => contact.id === saved.guideId)?.name ?? 'Your contact'}</Text>
+      <Text style={styles.body}>{new Date(saved.startsAt).toLocaleString()} · {saved.durationMinutes} minutes</Text></View>
     <AppButton label="View Your Circle" onPress={() => router.replace('/network')} />
   </Screen>;
   if (!contacts.length) return <Screen title="Plan a check-in"><Text style={styles.body}>Add a graduate to your circle before scheduling a check-in.</Text><AppButton label="Find people" onPress={() => router.push('/people')} /></Screen>;
@@ -89,7 +92,10 @@ function CheckInForm({ existing, initialGuideId }: { existing?: CheckIn; initial
       <AppButton variant="secondary" label="Edit details" disabled={saving} onPress={() => { setReview(false); setError(''); }} />
     </> : <>
       <Text style={styles.label}>Contact</Text>
-      <View style={styles.row}>{contacts.map((contact) => <Choice key={contact.id} label={contact.name} selected={guideId === contact.id} onPress={() => setGuideId(contact.id)} />)}</View>
+      {existing ? <View style={styles.card}>
+        <Text style={styles.label}>{guide?.name ?? 'Unavailable contact'}</Text>
+        <Text style={styles.body}>To choose a different contact, create a new check-in.</Text>
+      </View> : <View style={styles.row}>{contacts.map((contact) => <Choice key={contact.id} label={contact.name} selected={guideId === contact.id} onPress={() => setGuideId(contact.id)} />)}</View>}
       <Text style={styles.label}>Topic</Text>
       <TextInput style={styles.input} value={topic} onChangeText={setTopic} placeholder="What would you like to talk about?" accessibilityLabel="Check-in topic" maxLength={200} />
       <Text style={styles.label}>Duration</Text>
@@ -98,6 +104,7 @@ function CheckInForm({ existing, initialGuideId }: { existing?: CheckIn; initial
       <View style={styles.row}>{days.map((day) => <Choice key={dateKey(day)} label={day.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })} selected={date === dateKey(day)} onPress={() => setDate(dateKey(day))} />)}</View>
       <TextInput style={styles.input} value={date} onChangeText={setDate} placeholder="YYYY-MM-DD" accessibilityLabel="Check-in date, YYYY-MM-DD" autoCapitalize="none" />
       <Text style={styles.label}>Time</Text>
+      <Text style={styles.body}>Suggested times, not confirmed availability. Real contacts can accept or decline your invitation.</Text>
       <View style={styles.row}>{['09:00', '10:00', '12:00', '14:00', '16:00', '18:00'].map((slot) => <Choice key={slot} label={slot} selected={time === slot} onPress={() => setTime(slot)} />)}</View>
       <TextInput style={styles.input} value={time} onChangeText={setTime} placeholder="HH:mm (24-hour time)" accessibilityLabel="Check-in time, HH:mm in 24-hour time" autoCapitalize="none" />
       <Text style={styles.body}>Time zone: {Intl.DateTimeFormat().resolvedOptions().timeZone}</Text>

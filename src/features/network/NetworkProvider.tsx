@@ -17,7 +17,7 @@ type NetworkContextValue = NetworkData & {
   removeContact: (guideId: string) => Promise<void>;
   saveRequest: (request: RequestDraft) => Promise<void>;
   dismissRequest: (id: string) => Promise<void>;
-  saveCheckIn: (checkIn: CheckInDraft, id?: string) => Promise<void>;
+  saveCheckIn: (checkIn: CheckInDraft, id?: string) => Promise<CheckIn>;
   cancelCheckIn: (id: string) => Promise<void>;
   respondToCheckIn: (id: string, decision: 'accepted' | 'declined', revision: number) => Promise<void>;
   proposeTime: (id: string, revision: number, startsAt: string, duration: 15 | 30) => Promise<void>;
@@ -78,13 +78,13 @@ export function NetworkProvider({ children, accountId }: { children: ReactNode; 
   };
 
   // Serialize mutations so a slow add cannot overwrite a later remove or request.
-  const enqueue = (action: () => Promise<void>) => {
+  const enqueue = <T,>(action: () => Promise<T>): Promise<T> => {
     pending.current += 1;
     const task = queue.current.then(async () => {
       if (!active.current || !loaded.current) throw new Error('Your circle is still loading. Please try again.');
-      await action();
+      return await action();
     }).finally(() => { pending.current -= 1; });
-    queue.current = task.catch(() => {});
+    queue.current = task.then(() => {}, () => {});
     return task;
   };
 
@@ -206,6 +206,9 @@ export function NetworkProvider({ children, accountId }: { children: ReactNode; 
       }
       if (!previous.contactIds.includes(checkIn.guideId)) throw new Error('Add this graduate to your circle first.');
       if (id && !previous.checkIns.some((item) => item.id === id)) throw new Error('This check-in no longer exists.');
+      if (id && previous.checkIns.find(item => item.id === id)?.guideId !== checkIn.guideId) {
+        throw new Error('Create a new check-in to choose a different contact.');
+      }
       if ([...previous.checkIns, ...previous.incomingCheckIns.filter(item => item.status === 'accepted')].some((item) => !['declined', 'cancelled'].includes(item.status ?? '') && item.id !== id
         && start < Date.parse(item.startsAt) + item.durationMinutes * 60000
         && start + checkIn.durationMinutes * 60000 > Date.parse(item.startsAt))) {
@@ -221,6 +224,7 @@ export function NetworkProvider({ children, accountId }: { children: ReactNode; 
       checkInRetry.current = null;
       commit({ ...current.current,
         checkIns: [...current.current.checkIns.filter(item => item.id !== saved.id), saved] });
+      return saved;
     }),
     cancelCheckIn: (id) => enqueue(async () => {
       await cancelRemoteCheckIn(accountId, id);

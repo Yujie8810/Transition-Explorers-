@@ -401,8 +401,15 @@ test('scheduled check-ins deliver time and duration; recipient acceptance and se
   const api = backend(), a = mount(storage(), api, accountA), b = mount(storage(), api, accountB), c = mount(storage(), api, accountC);
   await a.ready(); await b.ready(); await c.ready();
   await a.render().addContact(accountB);
-  await a.render().saveCheckIn({ ...plan(), guideId: accountB });
+  const saved = await a.render().saveCheckIn({ ...plan(), guideId: accountB });
   const id = a.render().checkIns[0].id;
+  assert.equal(saved.id, id);
+  assert.equal(saved.delivered, true);
+  assert.equal(saved.status, 'pending');
+  await a.render().addContact('taylor');
+  await assert.rejects(a.render().saveCheckIn({ ...plan(), guideId: 'taylor' }, id), /different contact/);
+  assert.equal(a.render().checkIns[0].guideId, accountB);
+  await a.render().removeContact('taylor');
   assert.equal(a.render().checkIns[0].status, 'pending');
   await b.render().refresh();
   const invitation = b.render().incomingCheckIns[0];
