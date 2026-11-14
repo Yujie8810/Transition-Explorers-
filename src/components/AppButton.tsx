@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { Text } from './Typography';
+import { Pressable, StyleSheet } from 'react-native';
 import { theme } from '../theme';
 
 // Shared touch target: label is visible text; onPress is supplied by the screen.

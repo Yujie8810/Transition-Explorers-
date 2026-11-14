@@ -1,5 +1,6 @@
+import { Text } from './Typography';
 import { ReactNode } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { theme } from '../theme';
 
 // Shared page wrapper: scrollable content, consistent heading, and spacing.

@@ -24,6 +24,16 @@
     "scheme": "careercommons",
     "plugins": [
       "expo-router"
-    ]
+    ],
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "a2a311d0-3aea-46b7-a8b1-989a5444093f"
+      }
+    }
   }
 }

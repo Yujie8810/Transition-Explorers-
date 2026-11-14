@@ -1,5 +1,6 @@
+import { Text } from '../../components/Typography';
 import { useState } from 'react';
-import { Keyboard, Text } from 'react-native';
+import { Keyboard } from 'react-native';
 import { Link } from 'expo-router';
 import { Screen } from '../../components/Screen';
 import { AppButton } from '../../components/AppButton';
@@ -29,6 +30,6 @@ export default function LoginScreen() {
       editable={!busy} returnKeyType="go" onSubmitEditing={() => void submit()} />
     {error ? <Text style={authStyles.error} accessibilityRole="alert">{error}</Text> : null}
     <AppButton label={busy ? 'Logging in…' : 'Log in'} disabled={busy} onPress={() => void submit()} />
-    {!busy ? <Link href="/signup" style={authStyles.link}>New here? Create an account</Link> : null}
+    {!busy ? <Link href="/signup" asChild><Text style={authStyles.link}>New here? Create an account</Text></Link> : null}
   </Screen>;
 }

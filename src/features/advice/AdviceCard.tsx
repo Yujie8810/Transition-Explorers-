@@ -1,5 +1,6 @@
+import { Text } from '../../components/Typography';
 import { router } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { theme } from '../../theme';
 import { Advice, Guide, Topic } from '../../types';
 import { isPostedQuestion } from './AdviceProvider';

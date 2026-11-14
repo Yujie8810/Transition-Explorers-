@@ -1,4 +1,5 @@
-import { Text, View } from 'react-native';
+import { Text } from '../../components/Typography';
+import { View } from 'react-native';
 import { AppButton } from '../../components/AppButton';
 import type { CheckIn } from '../../types';
 import { useNetwork } from './NetworkProvider';

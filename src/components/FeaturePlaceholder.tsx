@@ -1,4 +1,5 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Text } from './Typography';
+import { StyleSheet, View } from 'react-native';
 import { theme } from '../theme';
 
 // Development-only planning card showing ownership and unfinished work.

@@ -1,6 +1,7 @@
+import { Text, TextInput } from '../../components/Typography';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { theme } from '../../theme';
 import { Topic } from '../../types';
 import { AdviceCard } from './AdviceCard';

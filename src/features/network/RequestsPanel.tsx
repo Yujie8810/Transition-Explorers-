@@ -1,4 +1,5 @@
-import { Text, View } from 'react-native';
+import { Text } from '../../components/Typography';
+import { View } from 'react-native';
 import { router } from 'expo-router';
 import { AppButton } from '../../components/AppButton';
 import { useNetwork } from './NetworkProvider';

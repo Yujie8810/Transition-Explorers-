@@ -1,5 +1,6 @@
+import { Text } from './Typography';
 import { router } from 'expo-router';
-import { Pressable, Text } from 'react-native';
+import { Pressable } from 'react-native';
 import { theme } from '../theme';
 
 export function HomeButton() {

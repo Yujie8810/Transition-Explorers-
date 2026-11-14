@@ -43,6 +43,7 @@ function mount() {
   });
   const Screen = load('src/features/ask/AskScreen.tsx', {
     ...imports,
+    '../../components/Typography': { Text: 'Text', TextInput: 'TextInput' },
     'expo-router': { router: {}, useLocalSearchParams: () => ({}) },
     'react-native': { Platform: { OS: 'ios' }, Keyboard: { dismiss() {} },
       StyleSheet: { create: value => value }, Text: 'Text', TextInput: 'TextInput', View: 'View' },

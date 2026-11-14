@@ -1,6 +1,8 @@
+import { Text } from '../../components/Typography';
 import { Tabs } from 'expo-router';
-import type { ComponentRef, Ref } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { useContext, type ComponentRef, type Ref } from 'react';
+import { Pressable, Text as SymbolText, View } from 'react-native';
+import { FontsReadyContext, fonts } from '../../components/Typography';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { theme } from '../../theme';
 import { HomeButton } from '../../components/HomeButton';
@@ -11,10 +13,12 @@ import { HomeButton } from '../../components/HomeButton';
 // the team’s chosen icons and coordinate any shared navigation changes.
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
+  const fontsReady = useContext(FontsReadyContext);
   return (
     <Tabs screenOptions={({ route }) => ({
       headerStyle: { backgroundColor: theme.colors.background },
       headerTintColor: theme.colors.ink,
+      headerTitleStyle: fontsReady ? { fontFamily: fonts.semibold, fontWeight: 'normal' } : undefined,
       tabBarActiveTintColor: theme.colors.green,
       // Highlight the full active tab (icon and label) using the shared lime accent.
       tabBarActiveBackgroundColor: theme.colors.lime,
@@ -36,8 +40,8 @@ export default function TabLayout() {
             style={{ width: 24, height: 24, alignItems: 'center', justifyContent: 'center', gap: 3 }}>
             <View style={{ width: 8, height: 8, borderRadius: 4, borderWidth: 1.5, borderColor: color }} />
             <View style={{ width: 18, height: 10, borderTopLeftRadius: 9, borderTopRightRadius: 9, borderWidth: 1.5, borderColor: color }} />
-          </View> : <Text accessibilityElementsHidden importantForAccessibility="no"
-            style={{ color, fontSize: 22, lineHeight: 24, includeFontPadding: false }}>{tab.icon}</Text>}
+          </View> : <SymbolText accessibilityElementsHidden importantForAccessibility="no"
+            style={{ color, fontSize: 22, lineHeight: 24, includeFontPadding: false }}>{tab.icon}</SymbolText>}
           <Text style={{ color, fontSize: 12, lineHeight: 16, fontWeight: selected ? '700' : '500' }}>{tab.label}</Text>
         </Pressable>;
       },

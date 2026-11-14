@@ -1,4 +1,5 @@
-import { StyleSheet, Text, TextInput, TextInputProps, View } from 'react-native';
+import { Text, TextInput } from '../../components/Typography';
+import { StyleSheet, TextInputProps, View } from 'react-native';
 import { theme } from '../../theme';
 
 export function AuthField({ label, ...props }: TextInputProps & { label: string }) {

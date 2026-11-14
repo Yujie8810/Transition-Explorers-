@@ -1,6 +1,7 @@
+import { Text, TextInput } from '../../components/Typography';
 import type { CheckIn } from '../../types';
 import { useState } from 'react';
-import { Text, TextInput, View } from 'react-native';
+import { View } from 'react-native';
 import { router } from 'expo-router';
 import { Screen } from '../../components/Screen';
 import { AppButton } from '../../components/AppButton';

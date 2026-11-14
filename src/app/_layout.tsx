@@ -1,3 +1,4 @@
+import { Text } from '../components/Typography';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { theme } from '../theme';
@@ -6,17 +7,35 @@ import { NetworkProvider } from '../features/network/NetworkProvider';
 import { AdviceProvider } from '../features/advice/AdviceProvider';
 import { SavedAdviceProvider } from '../state/SavedAdviceContext';
 import { ProfileProvider } from '../state/ProfileContext';
-import { Text } from 'react-native';
+
 import { Screen } from '../components/Screen';
 import { AppButton } from '../components/AppButton';
 import { HomeButton } from '../components/HomeButton';
 import { AuthProvider, useAuth } from '../features/auth/AuthProvider';
 import { AnswersProvider } from '../features/advice/AnswersProvider';
 import type { Account } from '../features/auth/accountStore';
-import type { ReactNode } from 'react';
+import { useContext, type ReactNode } from 'react';
+import { ActivityIndicator, View } from 'react-native';
+import { useFonts } from 'expo-font';
+import { DMSans_400Regular } from '@expo-google-fonts/dm-sans/400Regular';
+import { DMSans_500Medium } from '@expo-google-fonts/dm-sans/500Medium';
+import { DMSans_600SemiBold } from '@expo-google-fonts/dm-sans/600SemiBold';
+import { DMSans_700Bold } from '@expo-google-fonts/dm-sans/700Bold';
+import { DMSans_800ExtraBold } from '@expo-google-fonts/dm-sans/800ExtraBold';
+import { FontsReadyContext, fonts } from '../components/Typography';
 
 export default function RootLayout() {
-  return <AuthProvider><StatusBar style="dark" /><SessionLayout /></AuthProvider>;
+  const [loaded, error] = useFonts({
+    DMSans_400Regular, DMSans_500Medium, DMSans_600SemiBold,
+    DMSans_700Bold, DMSans_800ExtraBold,
+  });
+  if (!loaded && !error) return <View style={{ flex: 1, justifyContent: 'center', backgroundColor: theme.colors.background }}>
+    <ActivityIndicator accessibilityLabel="Loading fonts" color={theme.colors.green} />
+  </View>;
+  // Keep the app usable with system fonts if a bundled font fails to load.
+  return <FontsReadyContext.Provider value={loaded}>
+    <AuthProvider><StatusBar style="dark" /><SessionLayout /></AuthProvider>
+  </FontsReadyContext.Provider>;
 }
 
 function SessionLayout() {
@@ -63,7 +82,9 @@ function AccountProviders({
 
 function RootNavigator() {
   const { account } = useAuth();
+  const fontsReady = useContext(FontsReadyContext);
   return <Stack screenOptions={{
+      headerTitleStyle: fontsReady ? { fontFamily: fonts.semibold, fontWeight: 'normal' } : undefined,
       headerStyle: { backgroundColor: theme.colors.background },
       headerTintColor: theme.colors.ink,
       headerRight: () => <HomeButton />,

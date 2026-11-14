@@ -1,6 +1,7 @@
+import { Text, TextInput } from '../../components/Typography';
 import { useAuth } from '../auth/AuthProvider';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
 import { Screen } from '../../components/Screen';

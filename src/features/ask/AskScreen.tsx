@@ -1,6 +1,7 @@
+import { Text, TextInput } from '../../components/Typography';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ComponentRef, useEffect, useRef, useState } from 'react';
-import { Keyboard, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Keyboard, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { theme } from '../../theme';
 import { Topic } from '../../types';
 import { AdviceCard } from '../advice/AdviceCard';

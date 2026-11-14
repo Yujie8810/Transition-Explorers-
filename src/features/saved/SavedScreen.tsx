@@ -1,6 +1,7 @@
+import { Text } from '../../components/Typography';
 import { router } from 'expo-router';
 import { ReactNode, useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { SavedItem, useSavedAdvice } from '../../state/SavedAdviceContext';
 import { theme } from '../../theme';
 import { GuideByline } from '../advice/AdviceCard';

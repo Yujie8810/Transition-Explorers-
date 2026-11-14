@@ -1,5 +1,6 @@
+import { Text } from '../../components/Typography';
 import { useState } from 'react';
-import { Keyboard, Pressable, Text, View } from 'react-native';
+import { Keyboard, Pressable, View } from 'react-native';
 import { Link } from 'expo-router';
 import { Screen } from '../../components/Screen';
 import { AppButton } from '../../components/AppButton';
@@ -33,7 +34,7 @@ export default function SignupScreen() {
   };
   if (confirmation) return <Screen title="Check your email">
     <Text style={authStyles.body}>Check your inbox for a confirmation email. If one arrives, confirm your address, then return here to log in with your password.</Text>
-    <Link href="/login" replace style={authStyles.link}>Return to login</Link>
+    <Link href="/login" replace asChild><Text style={authStyles.link}>Return to login</Text></Link>
   </Screen>;
   return <Screen title="Join the community" subtitle="A place for UTD students and recent graduates.">
     <AuthField label="Name" value={name} onChangeText={value => { setName(value); setError(''); }}
@@ -56,6 +57,6 @@ export default function SignupScreen() {
     </View>
     {error ? <Text style={authStyles.error} accessibilityRole="alert">{error}</Text> : null}
     <AppButton label={busy ? 'Creating account…' : 'Create account'} disabled={busy} onPress={() => void submit()} />
-    {!busy ? <Link href="/login" replace style={authStyles.link}>Already registered? Log in</Link> : null}
+    {!busy ? <Link href="/login" replace asChild><Text style={authStyles.link}>Already registered? Log in</Text></Link> : null}
   </Screen>;
 }

@@ -1,5 +1,6 @@
+import { Text, TextInput } from '../../components/Typography';
 import { useState } from 'react';
-import { Switch, Text, TextInput, View, StyleSheet } from 'react-native';
+import { Switch, View, StyleSheet } from 'react-native';
 import { AppButton } from '../../components/AppButton';
 import { useAuth } from '../auth/AuthProvider';
 import { useProfile } from '../../state/ProfileContext';

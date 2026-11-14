@@ -9,6 +9,7 @@ function screen(file, params, accountId, overrides = {}, navigation = []) {
     { id: 'other-user', name: 'Other graduate', role: 'Engineer', expertise: [], listed: true }];
   const network = { ready: true, loadError: '', contactIds: [], requests: [], inbox: [], messages: [], checkIns: [], incomingCheckIns: [], timeProposals: [], reload() {}, ...overrides };
   const imports = {
+    '../../components/Typography': { Text: 'Text', TextInput: 'TextInput' },
     react: { useState: initial => [initial, () => {}], useRef: initial => ({ current: initial }) },
     'react/jsx-runtime': { jsx, jsxs: jsx, Fragment: 'fragment' },
     'react-native': { Text: 'Text', View: 'View', Pressable: 'Pressable', TextInput: 'TextInput', StyleSheet: { create: value => value } },

@@ -1,5 +1,6 @@
+import { Text } from '../../components/Typography';
 import { ReactNode } from 'react';
-import { AccessibilityInfo, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { AccessibilityInfo, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { theme } from '../../theme';
 
 /**
