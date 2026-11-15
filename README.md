@@ -4,9 +4,9 @@ A career-support app for UTD students and recent graduates, built for **CS 4352 
 
 **[Open the live app](https://career-commons.expo.app)**
 
-**YouTube walkthrough link:** ____________________
+**YouTube walkthrough link:** https://www.youtube.com/shorts/SFq0bXehmzw
 
-The walkthrough video, Source document, and Team document are prepared separately by their assigned teammates. The video link will be filled in when ready.
+The walkthrough video, Source document, and Team document are prepared separately by their assigned teammates.
 
 ## Features
 
@@ -20,7 +20,7 @@ The walkthrough video, Source document, and Team document are prepared separatel
 
 Open the live app and create an account or log in. If email confirmation is requested, confirm your email before logging in. The interface is designed for a portrait mobile screen; a narrow browser window or mobile viewport works well for review.
 
-The hosted website requires an internet connection and a browser, with no project installation or Expo Go required. No special browser flags are required by the code. There are no universal test credentials in this repository: use **Signup** with an accessible email address and your own password, confirm the email if prompted, then log in. Any prepared reviewer accounts should be supplied separately by the team.
+The hosted website requires an internet connection and a browser, with no project installation or Expo Go required. No special browser flags are required by the code. For grading, use the demo account provided in the submitted ReadMe PDF. Alternatively, use **Signup** with an accessible email address and your own password, confirm the email if prompted, then log in.
 
 For two-way testing, use account A and account B in separate browser profiles or on separate devices. On B, first choose **Profile → Edit profile → Graduate** and save. Then edit its People profile, enter role/expertise/bio, enable **Appear in People**, and save. A can now find B in People. These app accounts are separate from Expo accounts used for mobile development.
 

@@ -95,7 +95,7 @@ Feature guides: [contacts](circle-contacts.md), [People](people-directory.md), [
 
 - A [GitHub account](https://github.com/) with access to the team repository. If it is private, accept the collaborator invitation first.
 - [Git](https://git-scm.com/downloads) for downloading code and recording contributions.
-- An LTS version of [Node.js](https://nodejs.org/). npm comes with Node.js.
+- [Node.js](https://nodejs.org/) 22.13.0 or newer in the 22.x series, or 24.3.0 or newer in the 24.x series. npm comes with Node.js. These requirements match the main README.
 - A code editor such as VS Code or Cursor.
 
 Open Terminal on macOS or PowerShell on Windows and confirm the installations:
@@ -290,7 +290,7 @@ src/
 
 Search for `need to implment` in `src/` to find comments describing unfinished work and the responsible teammate. The spelling is intentional so everyone can search for the same marker.
 
-Routes re-export feature screens to keep team edits separate. Implement the UI inside your feature folder, replacing `FeaturePlaceholder` as you go. Add more routes/screens for review, confirmation, mentor details, or progress when your flow needs them.
+Routes re-export feature screens to keep team edits separate. Extend the implemented UI inside your feature folder. Add more routes/screens for review, confirmation, mentor details, or progress when your flow needs them.
 
 Use `useLocalSearchParams` from `expo-router` to read an `[id]` route parameter and look up the selected record. Advice and graduate profiles use this pattern with database IDs and fictional IDs from `sampleData.ts`.
 
